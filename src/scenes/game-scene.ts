@@ -68,12 +68,22 @@ export class GameScene extends Phaser.Scene {
      * @param gameobject
      * @param event
      */
-    private tileDown(pointer: any, gameobject: any, event: any): void {
+    private tileDown(_pointer: Phaser.Input.Pointer, gameobject: Tile, event: any): void {
         if (this.canMove) {
             if (!this.firstSelectedTile) {
                 this.firstSelectedTile = gameobject
+                this.firstSelectedTile.getSelected()
+                console.log('first')
             } else {
                 // So if we are here, we must have selected a second tile
+
+                // check if click the same tile
+                if (this.firstSelectedTile == gameobject) {
+                    this.firstSelectedTile.getDeselected()
+                    this.firstSelectedTile = undefined
+                    return
+                }
+                gameobject.getDeselected()
                 this.secondSelectedTile = gameobject
 
                 if (this.secondSelectedTile) {
@@ -87,7 +97,11 @@ export class GameScene extends Phaser.Scene {
                     // Check if the selected tiles are both in range to make a move
                     if ((dx === 1 && dy === 0) || (dx === 0 && dy === 1)) {
                         this.canMove = false
+                        this.firstSelectedTile.getDeselected()
                         this.swapTiles()
+                    } else {
+                        this.firstSelectedTile.getDeselected()
+                        this.firstSelectedTile = undefined
                     }
                 }
             }
@@ -124,8 +138,8 @@ export class GameScene extends Phaser.Scene {
                 targets: this.firstSelectedTile,
                 x: this.secondSelectedTile.x,
                 y: this.secondSelectedTile.y,
-                ease: 'Linear',
-                duration: 400,
+                ease: 'quad.inout',
+                duration: 600,
                 repeat: 0,
                 yoyo: false,
             })
@@ -134,8 +148,8 @@ export class GameScene extends Phaser.Scene {
                 targets: this.secondSelectedTile,
                 x: this.firstSelectedTile.x,
                 y: this.firstSelectedTile.y,
-                ease: 'Linear',
-                duration: 400,
+                ease: 'quad.inout',
+                duration: 600,
                 repeat: 0,
                 yoyo: false,
                 onComplete: () => {
@@ -157,7 +171,7 @@ export class GameScene extends Phaser.Scene {
     private checkMatches(): void {
         //Call the getMatches function to check for spots where there is
         //a run of three or more tiles in a row
-        const matches = this.getMatches(<Tile[][]> this.tileGrid)
+        const matches = this.getMatches(<Tile[][]>this.tileGrid)
 
         //If there are matches, remove them
         if (matches.length > 0) {
@@ -236,7 +250,7 @@ export class GameScene extends Phaser.Scene {
             for (const element of tempArr) {
                 const tile = element
                 //Find where this tile lives in the theoretical grid
-                const tilePos = this.getTilePos(<Tile[][]> this.tileGrid, tile)
+                const tilePos = this.getTilePos(<Tile[][]>this.tileGrid, tile)
 
                 // Remove the tile from the theoretical grid
                 if (tilePos.x !== -1 && tilePos.y !== -1) {
