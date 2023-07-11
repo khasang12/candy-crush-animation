@@ -73,7 +73,7 @@ export class GameScene extends Phaser.Scene {
             if (!this.firstSelectedTile) {
                 this.firstSelectedTile = gameobject
                 this.firstSelectedTile.getSelected()
-                console.log(this.firstSelectedTile)
+                console.log('first')
             } else {
                 // So if we are here, we must have selected a second tile
 
@@ -116,13 +116,13 @@ export class GameScene extends Phaser.Scene {
         if (this.firstSelectedTile && this.secondSelectedTile) {
             // Get the position of the two tiles
             const firstTilePosition = {
-                x: this.firstSelectedTile.x - this.firstSelectedTile.width / 2,
-                y: this.firstSelectedTile.y - this.firstSelectedTile.height / 2,
+                x: this.firstSelectedTile.x,
+                y: this.firstSelectedTile.y,
             }
 
             const secondTilePosition = {
-                x: this.secondSelectedTile.x - this.firstSelectedTile.width / 2,
-                y: this.secondSelectedTile.y - this.firstSelectedTile.height / 2,
+                x: this.secondSelectedTile.x,
+                y: this.secondSelectedTile.y,
             }
 
             // Swap them in our grid with the tiles
@@ -212,13 +212,18 @@ export class GameScene extends Phaser.Scene {
                         yoyo: false,
                     })
 
+                    
                     //The positions have changed so start this process again from the bottom
                     //NOTE: This is not set to me.tileGrid[i].length - 1 because it will immediately be decremented as
                     //we are at the end of the loop.
-                    x = this.tileGrid[y].length
+                    //x = this.tileGrid[y].length
                 }
+                
             }
+            
         }
+
+        
     }
 
     private fillTile(): void {
@@ -354,7 +359,7 @@ export class GameScene extends Phaser.Scene {
             }
             if (groups.length > 0) matches.push(groups)
         }
-        console.log(matches)
+
         return matches
     }
 }

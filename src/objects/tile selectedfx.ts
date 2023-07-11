@@ -1,8 +1,8 @@
 import { IImageConstructor } from '../interfaces/image.interface'
 
 export class Tile extends Phaser.GameObjects.Sprite {
-    private selectedShader: Phaser.GameObjects.Shader
-    private tileGraphics: Phaser.GameObjects.Graphics
+    private selected: Phaser.FX.Glow
+    private selectedAnim: Phaser.Tweens.Tween
 
     constructor(aParams: IImageConstructor) {
         super(aParams.scene, aParams.x, aParams.y, aParams.texture, aParams.frame)
@@ -12,33 +12,30 @@ export class Tile extends Phaser.GameObjects.Sprite {
         this.setInteractive()
 
         this.scene.add.existing(this)
-
-        // Tile Selected
+        /* this.preFX?.setPadding(30)
+        this.selectedFX = this.preFX?.addGlow().setActive(false) as Phaser.FX.Glow */
         const basesShader2 = new Phaser.Display.BaseShader('BufferShader2', fragmentShader3)
-        this.selectedShader = this.scene.add
-            .shader(basesShader2, this.x - 5, this.y, this.width * 1.2, this.height * 1.2)
-            .setVisible(false)
-
-        // Tile Border
-        this.tileGraphics = this.scene.add.graphics().setDepth(-1)
-        const borderWidth = 2
-        this.tileGraphics.lineStyle(borderWidth, 0xffffff, 1)
-        this.tileGraphics.strokeRect(
-            this.x - this.width / 2 - borderWidth / 2,
-            this.y - this.height / 2 - borderWidth / 2,
-            this.width + borderWidth - 1,
-            this.height + borderWidth - 1
-        )
+         const shader2 = this.scene.add.shader(basesShader2, 400, 300, 256, 256)
     }
 
     public getSelected(): void {
-        this.selectedShader.setX(this.x - 5)
-        this.selectedShader.setY(this.y)
-        this.selectedShader.setVisible(true)
+        //this.selectedFX.setActive(true)
+        if (!this.selectedAnim) {
+            this.selectedAnim = this.scene.tweens.add({
+                /* targets: this.selectedFX,
+                outerStrength: 10, */
+                targets: this,
+                scale: 0.9,
+                yoyo: true,
+                ease: 'sine.inout',
+                repeat: -1,
+            })
+        } else this.selectedAnim.resume()
     }
 
     public getDeselected(): void {
-        this.selectedShader.setVisible(false)
+        //this.selectedFX.setActive(false)
+        if (this.selectedAnim) this.selectedAnim.pause()
     }
 }
 
@@ -63,6 +60,6 @@ void main (void)
         intensity += pow(1000000., (0.77 - length(xy) * 1.9) * (1. + 0.275 * fract(-i / 27. - time))) / 80000.;
     }
 
-    gl_FragColor = vec4(clamp(intensity * vec3(0.0927, 0.396, 0.17), vec3(0.), vec3(0.5)), 0.);
+    gl_FragColor = vec4(clamp(intensity * vec3(0.0777, 0.196, 0.27), vec3(0.), vec3(1.)), 0.);
 }
 `

@@ -32,12 +32,11 @@ export class Tile extends Phaser.GameObjects.Sprite {
     }
 
     public getSelected(): void {
-        this.selectedShader.setX(this.x - 5)
-        this.selectedShader.setY(this.y)
         this.selectedShader.setVisible(true)
     }
 
     public getDeselected(): void {
+        //this.selectedFX.setActive(false)
         this.selectedShader.setVisible(false)
     }
 }
