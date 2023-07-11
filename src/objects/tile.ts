@@ -9,6 +9,7 @@ export class Tile extends Phaser.GameObjects.Sprite {
 
         // set image settings
         this.setOrigin(0.5, 0.5)
+        this.setScale(0.8)
         this.setInteractive()
 
         // Tile Spawned
@@ -29,6 +30,7 @@ export class Tile extends Phaser.GameObjects.Sprite {
         const basesShader2 = new Phaser.Display.BaseShader('BufferShader2', fragmentShader3)
         this.selectedShader = this.scene.add
             .shader(basesShader2, this.x - 5, this.y, this.width * 1.2, this.height * 1.2)
+            .setDepth(-1)
             .setVisible(false)
 
         // Tile Border
@@ -36,10 +38,10 @@ export class Tile extends Phaser.GameObjects.Sprite {
         const borderWidth = 2
         this.tileGraphics.lineStyle(borderWidth, 0xffffff, 1)
         this.tileGraphics.strokeRoundedRect(
-            this.x - this.width / 2 - borderWidth / 2,
-            this.y - this.height / 2 - borderWidth / 2,
-            this.width + borderWidth - 1,
-            this.height + borderWidth - 1,
+            this.x - this.width / 2 - borderWidth / 2 + 4,
+            this.y - this.height / 2 - borderWidth / 2 + 4,
+            this.width + borderWidth - 8,
+            this.height + borderWidth - 8,
             12
         )
     }

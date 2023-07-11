@@ -4,15 +4,16 @@ import { Tile } from '../objects/tile'
 export class GameScene extends Phaser.Scene {
     // Global Animation
     private idleTweens: Phaser.Tweens.Tween
+    private matchParticle: Phaser.GameObjects.Particles.ParticleEmitter
 
     // Variables
     private canMove: boolean
     private inactivityTimer: NodeJS.Timeout
+    private isSuggested: boolean
+    private isRedisting: boolean
 
     // Grid with tiles
     private tileGrid: Array<Array<Tile | undefined>>
-
-    // Selected Tiles
     private firstSelectedTile: Tile | undefined
     private secondSelectedTile: Tile | undefined
 
@@ -25,6 +26,8 @@ export class GameScene extends Phaser.Scene {
     init(): void {
         // Init variables
         this.canMove = true
+        this.isSuggested = false
+        this.isRedisting = false
 
         // set background color
         this.cameras.main.setBackgroundColor(0x78aade)
@@ -46,7 +49,16 @@ export class GameScene extends Phaser.Scene {
         this.input.on('pointermove', () => {
             clearTimeout(this.inactivityTimer)
             if (this.idleTweens) this.idleTweens.stop()
-            this.inactivityTimer = setTimeout(() => this.idle(), 3000)
+
+            this.inactivityTimer = setTimeout(() => this.getNextMove(), 2400)
+            this.inactivityTimer = setTimeout(() => this.idle(), 5000)
+        })
+
+        this.input.on('pointerdown', () => {
+            if (this.matchParticle) {
+                this.matchParticle.stop()
+                this.isSuggested = false
+            }
         })
 
         // Check if matches on the start
@@ -208,6 +220,10 @@ export class GameScene extends Phaser.Scene {
             this.fillTile()
             this.tileUp()
             this.checkMatches()
+            if (this.matchParticle) {
+                this.isSuggested = false
+                this.matchParticle.stop()
+            }
         } else {
             // No match so just swap the tiles back to their original position and reset
             this.swapTiles()
@@ -232,7 +248,7 @@ export class GameScene extends Phaser.Scene {
                         targets: tempTile,
                         y: CONST.tileHeight * y + CONST.tileHeight / 2,
                         ease: 'sine.inout',
-                        duration: 300,
+                        duration: 500,
                         repeat: 0,
                         yoyo: false,
                         onComplete: () => {
@@ -271,6 +287,23 @@ export class GameScene extends Phaser.Scene {
         // Loop through all the matches and remove the associated tiles
         for (const element of matches) {
             const tempArr = element
+
+            const emitter = this.add.particles(tempArr[0].x, tempArr[0].y, 'flares', {
+                frame: { frames: ['red', 'green', 'blue'], cycle: true },
+                blendMode: 'ADD',
+                lifespan: 250,
+                scale: { start: 0.5, end: 0.1 },
+            })
+            const shape3 = new Phaser.Geom.Rectangle(
+                -tempArr[0].width / 2,
+                -tempArr[0].height / 2,
+                -tempArr[0].x + tempArr[2].x + tempArr[2].width,
+                -tempArr[0].y + tempArr[2].y + tempArr[2].height
+            )
+            emitter.addEmitZone({ type: 'edge', source: shape3, quantity: 32, total: 1 })
+            this.time.delayedCall(500, () => {
+                emitter.stop()
+            })
 
             for (const element of tempArr) {
                 const tile = element
@@ -389,18 +422,15 @@ export class GameScene extends Phaser.Scene {
             for (let i = 0; i < this.tileGrid.length; i++) {
                 this.idleTweens = this.tweens.add({
                     targets: this.tileGrid[i][j],
-                    scale: 0.8,
-                    angle: 360,
-                    ease: 'Power2',
-                    duration: 1000,
-                    delay: time * 35,
-                    repeat: 1,
-                    yoyo: false,
-                    hold: 500,
-                    repeatDelay: 500,
-                    onComplete: ()=>{
+                    scale: 0.5,
+                    ease: 'sine.inout',
+                    duration: 300,
+                    delay: i * 50,
+                    repeat: 2,
+                    yoyo: true,
+                    onComplete: () => {
                         this.idleTweens.destroy()
-                    }
+                    },
                 })
 
                 time++
@@ -409,6 +439,125 @@ export class GameScene extends Phaser.Scene {
                     time = 0
                 }
             }
+        }
+    }
+
+    private getNextMove(): void {
+        for (let i = 0; i < this.tileGrid.length; i++) {
+            for (let j = 0; j < this.tileGrid.length; j++) {
+                if (this.tileGrid[i][j] !== undefined) {
+                    for (const [dx, dy] of [
+                        [1, 0],
+                        [-1, 0],
+                        [0, 1],
+                        [0, -1],
+                    ]) {
+                        const x2 = i + dx
+                        const y2 = j + dy
+                        if (
+                            x2 >= 0 &&
+                            x2 < this.tileGrid.length &&
+                            y2 >= 0 &&
+                            y2 < this.tileGrid.length &&
+                            this.tileGrid[x2][y2] !== undefined
+                        ) {
+                            // Swap the candies
+                            // eslint-disable-next-line @typescript-eslint/no-extra-semi
+                            ;[this.tileGrid[i][j], this.tileGrid[x2][y2]] = [
+                                this.tileGrid[x2][y2],
+                                this.tileGrid[i][j],
+                            ]
+                            // Calculate the score of the new this.tileGrid
+                            const matches = this.getMatches(<Tile[][]>this.tileGrid)
+                            if (matches.length > 0) {
+                                // eslint-disable-next-line @typescript-eslint/no-extra-semi
+                                ;[this.tileGrid[i][j], this.tileGrid[x2][y2]] = [
+                                    this.tileGrid[x2][y2],
+                                    this.tileGrid[i][j],
+                                ]
+                                if (!this.isSuggested) {
+                                    this.emitSuggestion(matches[0])
+                                    this.isSuggested = true
+                                }
+                                return
+                            }
+                            // Swap the candies back to their original positions
+                            // eslint-disable-next-line @typescript-eslint/no-extra-semi
+                            ;[this.tileGrid[i][j], this.tileGrid[x2][y2]] = [
+                                this.tileGrid[x2][y2],
+                                this.tileGrid[i][j],
+                            ]
+                        }
+                    }
+                }
+            }
+        }
+        this.emitRedistribution()
+    }
+
+    public emitSuggestion(tileGroup: Tile[]) {
+        const [oriX, oriY] = [
+            Math.min(tileGroup[0].x, tileGroup[1].x, tileGroup[2].x),
+            Math.min(tileGroup[0].y, tileGroup[1].y, tileGroup[2].y),
+        ]
+        const [eastX, eastY] = [
+            Math.max(tileGroup[0].x, tileGroup[1].x, tileGroup[2].x) + tileGroup[2].width,
+            Math.max(tileGroup[0].y, tileGroup[1].y, tileGroup[2].y) + tileGroup[2].height,
+        ]
+        this.matchParticle = this.add.particles(oriX, oriY, 'flares', {
+            frame: { frames: ['red', 'green', 'blue'], cycle: true },
+            blendMode: 'ADD',
+            lifespan: 250,
+            scale: { start: 0.5, end: 0.1 },
+        })
+        const rect = new Phaser.Geom.Rectangle(
+            -tileGroup[0].width / 2,
+            -tileGroup[0].height / 2,
+            -oriX + eastX,
+            -oriY + eastY
+        )
+        this.matchParticle.addEmitZone({
+            type: 'edge',
+            source: rect,
+            quantity: 32,
+            total: 1,
+        })
+    }
+
+    public emitRedistribution() {
+        if (!this.isRedisting) {
+            this.isRedisting = true
+            const circle = new Phaser.Geom.Circle(300, 400, 200)
+            const objects = <Phaser.GameObjects.Sprite[]>this.tileGrid.flat()
+            const group = this.add.group(objects)
+            Phaser.Actions.PlaceOnCircle(group.getChildren(), circle)
+
+            this.tweens.add({
+                targets: circle,
+                radius: 2000,
+                ease: 'sine.inout',
+                yoyo: true,
+                duration: 3000,
+                //repeat: -1,
+                onUpdate: function () {
+                    Phaser.Actions.RotateAroundDistance(
+                        objects,
+                        { x: 510 / 2, y: 575 / 2 },
+                        0.02,
+                        circle.radius
+                    )
+                },
+                onComplete: () => {
+                    this.isRedisting = false
+                    for (let y = 0; y < CONST.gridHeight; y++) {
+                        for (let x = 0; x < CONST.gridWidth; x++) {
+                            this.tileGrid[y][x]?.destroy()
+                            this.tileGrid[y][x] = this.addTile(x, y, 100).setAlpha(0)
+                        }
+                    }
+                    this.revealTiles()
+                },
+            })
         }
     }
 }
