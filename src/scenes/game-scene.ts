@@ -2,8 +2,12 @@ import { CONST } from '../const/const'
 import { Tile } from '../objects/tile'
 
 export class GameScene extends Phaser.Scene {
+    // Global Animation
+    private idleTweens: Phaser.Tweens.Tween
+
     // Variables
     private canMove: boolean
+    private inactivityTimer: NodeJS.Timeout
 
     // Grid with tiles
     private tileGrid: Array<Array<Tile | undefined>>
@@ -30,15 +34,37 @@ export class GameScene extends Phaser.Scene {
         for (let y = 0; y < CONST.gridHeight; y++) {
             this.tileGrid[y] = []
             for (let x = 0; x < CONST.gridWidth; x++) {
-                this.tileGrid[y][x] = this.addTile(x, y)
+                this.tileGrid[y][x] = this.addTile(x, y).setAlpha(0)
             }
         }
 
+        this.revealTiles()
         // Input
         this.input.on('gameobjectdown', this.tileDown, this)
 
+        // reset the inactivity timer on user input
+        this.input.on('pointermove', () => {
+            clearTimeout(this.inactivityTimer)
+            if (this.idleTweens) this.idleTweens.stop()
+            this.inactivityTimer = setTimeout(() => this.idle(), 3000)
+        })
+
         // Check if matches on the start
-        this.checkMatches()
+        this.time.delayedCall(2000, () => {
+            this.checkMatches()
+        })
+    }
+
+    private revealTiles() {
+        let i = 300
+        for (let y = CONST.gridHeight - 1; y >= 0; y--) {
+            for (let x = 0; x < CONST.gridWidth; x++) {
+                const initYPos = this.tileGrid[y][x]?.y
+                this.tileGrid[y][x]?.setY(-200)
+                if (initYPos) this.tileGrid[y][x]?.revealImage(initYPos, i)
+                i += 20
+            }
+        }
     }
 
     /**
@@ -46,7 +72,7 @@ export class GameScene extends Phaser.Scene {
      * @param x
      * @param y
      */
-    private addTile(x: number, y: number): Tile {
+    private addTile(x: number, y: number, delay?: number): Tile {
         // Get a random tile
         const randomTileType: string =
             CONST.candyTypes[Phaser.Math.RND.between(0, CONST.candyTypes.length - 1)]
@@ -57,6 +83,7 @@ export class GameScene extends Phaser.Scene {
             x: x * CONST.tileWidth + CONST.tileWidth / 2,
             y: y * CONST.tileHeight + CONST.tileHeight / 2,
             texture: randomTileType,
+            delay: delay,
         })
     }
 
@@ -70,20 +97,19 @@ export class GameScene extends Phaser.Scene {
      */
     private tileDown(_pointer: Phaser.Input.Pointer, gameobject: Tile, event: any): void {
         if (this.canMove) {
-            if (!this.firstSelectedTile) {
+            if (this.firstSelectedTile == undefined) {
                 this.firstSelectedTile = gameobject
                 this.firstSelectedTile.getSelected()
                 console.log(this.firstSelectedTile)
             } else {
                 // So if we are here, we must have selected a second tile
-
+                this.firstSelectedTile.getDeselected()
                 // check if click the same tile
                 if (this.firstSelectedTile == gameobject) {
-                    this.firstSelectedTile.getDeselected()
                     this.firstSelectedTile = undefined
                     return
                 }
-                gameobject.getDeselected()
+
                 this.secondSelectedTile = gameobject
 
                 if (this.secondSelectedTile) {
@@ -97,10 +123,8 @@ export class GameScene extends Phaser.Scene {
                     // Check if the selected tiles are both in range to make a move
                     if ((dx === 1 && dy === 0) || (dx === 0 && dy === 1)) {
                         this.canMove = false
-                        this.firstSelectedTile.getDeselected()
                         this.swapTiles()
                     } else {
-                        this.firstSelectedTile.getDeselected()
                         this.firstSelectedTile = undefined
                     }
                 }
@@ -114,6 +138,7 @@ export class GameScene extends Phaser.Scene {
      */
     private swapTiles(): void {
         if (this.firstSelectedTile && this.secondSelectedTile) {
+            this.canMove = false
             // Get the position of the two tiles
             const firstTilePosition = {
                 x: this.firstSelectedTile.x - this.firstSelectedTile.width / 2,
@@ -154,6 +179,7 @@ export class GameScene extends Phaser.Scene {
                 yoyo: false,
                 onComplete: () => {
                     this.checkMatches()
+                    this.canMove = true
                 },
             })
 
@@ -179,7 +205,6 @@ export class GameScene extends Phaser.Scene {
             this.removeTileGroup(matches)
             // Move the tiles currently on the board into their new positions
             this.resetTile()
-            //Fill the board with new tiles wherever there is an empty spot
             this.fillTile()
             this.tileUp()
             this.checkMatches()
@@ -206,16 +231,14 @@ export class GameScene extends Phaser.Scene {
                     this.add.tween({
                         targets: tempTile,
                         y: CONST.tileHeight * y + CONST.tileHeight / 2,
-                        ease: 'Linear',
-                        duration: 200,
+                        ease: 'sine.inout',
+                        duration: 300,
                         repeat: 0,
                         yoyo: false,
+                        onComplete: () => {
+                            x = this.tileGrid[y].length
+                        },
                     })
-
-                    //The positions have changed so start this process again from the bottom
-                    //NOTE: This is not set to me.tileGrid[i].length - 1 because it will immediately be decremented as
-                    //we are at the end of the loop.
-                    x = this.tileGrid[y].length
                 }
             }
         }
@@ -227,8 +250,8 @@ export class GameScene extends Phaser.Scene {
             for (let x = 0; x < this.tileGrid[y].length; x++) {
                 if (this.tileGrid[y][x] === undefined) {
                     //Found a blank spot so lets add animate a tile there
-                    const tile = this.addTile(x, y)
-
+                    console.log('fill', y, x)
+                    const tile = this.addTile(x, y, 50)
                     //And also update our "theoretical" grid
                     this.tileGrid[y][x] = tile
                 }
@@ -237,9 +260,11 @@ export class GameScene extends Phaser.Scene {
     }
 
     private tileUp(): void {
-        // Reset active tiles
-        this.firstSelectedTile = undefined
-        this.secondSelectedTile = undefined
+        if (this.secondSelectedTile) {
+            // Reset active tiles
+            this.firstSelectedTile = undefined
+            this.secondSelectedTile = undefined
+        }
     }
 
     private removeTileGroup(matches: any): void {
@@ -354,7 +379,36 @@ export class GameScene extends Phaser.Scene {
             }
             if (groups.length > 0) matches.push(groups)
         }
-        console.log(matches)
         return matches
+    }
+
+    public idle() {
+        console.log('idle')
+        let time = 0
+        for (let j = 0; j < this.tileGrid.length; j++) {
+            for (let i = 0; i < this.tileGrid.length; i++) {
+                this.idleTweens = this.tweens.add({
+                    targets: this.tileGrid[i][j],
+                    scale: 0.8,
+                    angle: 360,
+                    ease: 'Power2',
+                    duration: 1000,
+                    delay: time * 35,
+                    repeat: 1,
+                    yoyo: false,
+                    hold: 500,
+                    repeatDelay: 500,
+                    onComplete: ()=>{
+                        this.idleTweens.destroy()
+                    }
+                })
+
+                time++
+
+                if (time % 8 === 0) {
+                    time = 0
+                }
+            }
+        }
     }
 }

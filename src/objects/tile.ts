@@ -11,6 +11,18 @@ export class Tile extends Phaser.GameObjects.Sprite {
         this.setOrigin(0.5, 0.5)
         this.setInteractive()
 
+        // Tile Spawned
+        if (aParams.delay) {
+            const initYPos = this.y
+            this.y = initYPos - this.height
+            this.scene.tweens.add({
+                targets: this,
+                y: initYPos,
+                ease: 'Power3',
+                duration: 300,
+                delay: aParams.delay,
+            })
+        }
         this.scene.add.existing(this)
 
         // Tile Selected
@@ -20,21 +32,34 @@ export class Tile extends Phaser.GameObjects.Sprite {
             .setVisible(false)
 
         // Tile Border
-        this.tileGraphics = this.scene.add.graphics().setDepth(-1)
+        this.tileGraphics = this.scene.add.graphics().setDepth(-1).setVisible(true)
         const borderWidth = 2
         this.tileGraphics.lineStyle(borderWidth, 0xffffff, 1)
-        this.tileGraphics.strokeRect(
+        this.tileGraphics.strokeRoundedRect(
             this.x - this.width / 2 - borderWidth / 2,
             this.y - this.height / 2 - borderWidth / 2,
             this.width + borderWidth - 1,
-            this.height + borderWidth - 1
+            this.height + borderWidth - 1,
+            12
         )
+    }
+
+    public revealImage(initYPos: number, delay: number): void {
+        this.scene.tweens.add({
+            targets: this,
+            y: initYPos,
+            alpha: 1,
+            ease: 'Power3',
+            duration: 800,
+            delay: delay,
+        })
     }
 
     public getSelected(): void {
         this.selectedShader.setX(this.x - 5)
         this.selectedShader.setY(this.y)
         this.selectedShader.setVisible(true)
+        this.tileGraphics.setVisible(true)
     }
 
     public getDeselected(): void {

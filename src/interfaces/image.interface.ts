@@ -3,5 +3,6 @@ export interface IImageConstructor {
     x: number
     y: number
     texture: string
+    delay?: number
     frame?: string | number
 }
