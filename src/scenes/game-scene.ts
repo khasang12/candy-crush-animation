@@ -73,8 +73,19 @@ export class GameScene extends Phaser.Scene {
             for (let x = 0; x < CONST.gridWidth; x++) {
                 const initYPos = this.tileGrid[y][x]?.y
                 this.tileGrid[y][x]?.setY(-200)
-                if (initYPos) this.tileGrid[y][x]?.revealImage(initYPos, i)
+                if (initYPos) this.tileGrid[y][x]?.revealImageWithDelay(initYPos, i)
                 i += 20
+            }
+        }
+    }
+
+    private revealTilesFromShape() {
+        for (let y = CONST.gridHeight - 1; y >= 0; y--) {
+            for (let x = 0; x < CONST.gridWidth; x++) {
+                const initYPos = this.tileGrid[y][x]?.y
+                const initXPos = this.tileGrid[y][x]?.x
+                this.tileGrid[y][x]?.setPosition(510 / 2, 575 / 2)
+                if (initXPos && initYPos) this.tileGrid[y][x]?.revealImage(initXPos, initYPos)
             }
         }
     }
@@ -220,16 +231,18 @@ export class GameScene extends Phaser.Scene {
             this.fillTile()
             this.tileUp()
             this.checkMatches()
-            if (this.matchParticle) {
-                this.isSuggested = false
-                this.matchParticle.stop()
-            }
         } else {
             // No match so just swap the tiles back to their original position and reset
             this.swapTiles()
             this.tileUp()
             this.canMove = true
         }
+        this.time.delayedCall(0, () => {
+            if (this.matchParticle) {
+                this.isSuggested = false
+                this.matchParticle.stop()
+            }
+        })
     }
 
     private resetTile(): void {
@@ -416,7 +429,6 @@ export class GameScene extends Phaser.Scene {
     }
 
     public idle() {
-        console.log('idle')
         let time = 0
         for (let j = 0; j < this.tileGrid.length; j++) {
             for (let i = 0; i < this.tileGrid.length; i++) {
@@ -534,11 +546,10 @@ export class GameScene extends Phaser.Scene {
 
             this.tweens.add({
                 targets: circle,
-                radius: 2000,
+                radius: 200,
                 ease: 'sine.inout',
                 yoyo: true,
-                duration: 3000,
-                //repeat: -1,
+                duration: 500,
                 onUpdate: function () {
                     Phaser.Actions.RotateAroundDistance(
                         objects,
@@ -552,10 +563,14 @@ export class GameScene extends Phaser.Scene {
                     for (let y = 0; y < CONST.gridHeight; y++) {
                         for (let x = 0; x < CONST.gridWidth; x++) {
                             this.tileGrid[y][x]?.destroy()
-                            this.tileGrid[y][x] = this.addTile(x, y, 100).setAlpha(0)
+                            this.tileGrid[y][x] = this.addTile(x, y).setAlpha(0)
                         }
                     }
-                    this.revealTiles()
+                    this.revealTilesFromShape()
+                    // Check if matches on the start
+                    this.time.delayedCall(2000, () => {
+                        this.checkMatches()
+                    })
                 },
             })
         }

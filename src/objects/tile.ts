@@ -46,7 +46,7 @@ export class Tile extends Phaser.GameObjects.Sprite {
         )
     }
 
-    public revealImage(initYPos: number, delay: number): void {
+    public revealImageWithDelay(initYPos: number, delay: number): void {
         this.scene.tweens.add({
             targets: this,
             y: initYPos,
@@ -54,6 +54,17 @@ export class Tile extends Phaser.GameObjects.Sprite {
             ease: 'Power3',
             duration: 800,
             delay: delay,
+        })
+    }
+
+    public revealImage(initXPos: number, initYPos: number): void {
+        this.scene.tweens.add({
+            targets: this,
+            x: initXPos,
+            y: initYPos,
+            alpha: 1,
+            ease: 'Power3',
+            duration: 800,
         })
     }
 
