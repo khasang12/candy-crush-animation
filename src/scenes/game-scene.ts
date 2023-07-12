@@ -5,6 +5,7 @@ export class GameScene extends Phaser.Scene {
     // Global Animation
     private idleTweens: Phaser.Tweens.Tween
     private matchParticle: Phaser.GameObjects.Particles.ParticleEmitter
+    private confettiParticle: Phaser.GameObjects.Particles.ParticleEmitter
 
     // Variables
     private canMove: boolean
@@ -31,6 +32,18 @@ export class GameScene extends Phaser.Scene {
         this.canMove = true
         this.isSuggested = false
         this.isRedisting = false
+
+        this.confettiParticle = this.add.particles(300, 100, 'flares', {
+            frame: ['red', 'yellow', 'green'],
+            lifespan: 2000,
+            speed: { min: 50, max: 300 },
+            angle: { min: 0, max: 180 },
+            scale: { start: 0.15, end: 0 },
+            gravityY: 100,
+            blendMode: 'ADD',
+            emitting: false,
+            frequency: 60,
+        })
 
         // Text
         this.scoreText = this.add
@@ -325,7 +338,8 @@ export class GameScene extends Phaser.Scene {
                         this.isRedisting = false
                         if (this.matchParticle) this.matchParticle.stop(true)
                         this.isSuggested = true
-                        this.time.delayedCall(1000, () => {
+                        this.confettiParticle.explode(128)
+                        this.time.delayedCall(2000, () => {
                             this.shuffle()
                         })
                     }

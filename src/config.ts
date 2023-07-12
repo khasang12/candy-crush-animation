@@ -6,7 +6,7 @@ export const GameConfig: Phaser.Types.Core.GameConfig = {
     title: 'Candy crush',
     url: 'https://github.com/digitsensitive/phaser3-typescript',
     version: '2.0',
-    width: 705,
+    width: 715,
     height: 575,
     type: Phaser.AUTO,
     parent: 'game',

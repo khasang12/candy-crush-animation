@@ -3,6 +3,7 @@ export class HUDScene extends Phaser.Scene {
     private loadingBar: Phaser.GameObjects.Graphics
     private progressBar: Phaser.GameObjects.Graphics
     private progressParticle: Phaser.GameObjects.Particles.ParticleEmitter
+    private textLock: boolean
     private target: number
 
     constructor() {
@@ -12,6 +13,7 @@ export class HUDScene extends Phaser.Scene {
     }
 
     create(): void {
+        this.target = 500
         this.createLoadingbar()
         this.progressParticle = this.add
             .particles(520, 160, 'flares', {
@@ -43,27 +45,58 @@ export class HUDScene extends Phaser.Scene {
         return this.add.bitmapText(x, y, 'font', value, 35)
     }
 
-    private updateScore() {
-        this.textElements.get('SCORE')?.setText(`Score: ${this.registry.get('score')}`)
+    private updateProgress() {
         this.progressBar.clear()
         this.progressBar.fillStyle(0xfff6d3, 1)
-        this.progressBar.fillRect(522, 152, (180 * this.registry.get('score')) / 500, 16)
+        this.progressBar.fillRect(522, 152, (180 * this.registry.get('score')) / this.target, 16)
         this.progressParticle.setAlpha(1)
-        this.progressParticle.setX(522 + (180 * this.registry.get('score')) / 500)
-        if (this.registry.get('score') % 500 == 0 && this.registry.get('score') > 0) {
+        this.progressParticle.setX(522 + (180 * this.registry.get('score')) / this.target)
+    }
+
+    private updateScore() {
+        this.textElements.get('SCORE')?.setText(`Score: ${this.registry.get('score')}`)
+        this.updateProgress()
+        if (
+            (!this.textLock &&
+                this.registry.get('score') % 500 == 0 &&
+                this.registry.get('score') > 0) ||
+            this.registry.get('score') > this.registry.get('level') * 500
+        ) {
+            this.registry.values.level += 1
+            this.textLock = true
             this.time.delayedCall(300, () => {
-                this.registry.values.score = 0
-                this.registry.values.level += 1
                 this.updateLevel()
                 this.updateScore()
                 this.progressParticle.setAlpha(0)
             })
+        } else {
+            this.textLock = false
         }
     }
 
     private updateLevel() {
-        this.textElements.get('LEVEL')?.setText(`Level: ${this.registry.get('level')}`)
-        this.textElements.get('TARGET')?.setText(`Target: ${this.registry.get('level') * 500}`)
+        // Create the tweens
+        this.textElements.get('LEVEL')?.setAlpha(0)
+        this.tweens.add({
+            targets: this.textElements.get('TARGET'),
+            x: 100,
+            y: 150,
+            scale: 3,
+            duration: 1000,
+            ease: 'cubic.out',
+            yoyo: true,
+            onStart: () => {
+                this.target += 500
+            },
+            onComplete: () => {
+                this.textElements.get('TARGET')?.setText(`Goal: ${this.target}`)
+                this.textElements
+                    .get('LEVEL')
+                    ?.setAlpha(1)
+                    .setText(`Level: ${this.registry.get('level')}`)
+                this.updateProgress()
+            },
+        })
     }
 
     private createLoadingbar(): void {
