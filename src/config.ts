@@ -1,15 +1,16 @@
 import { BootScene } from './scenes/boot-scene'
 import { GameScene } from './scenes/game-scene'
+import { HUDScene } from './scenes/hud-scene'
 
 export const GameConfig: Phaser.Types.Core.GameConfig = {
     title: 'Candy crush',
     url: 'https://github.com/digitsensitive/phaser3-typescript',
     version: '2.0',
-    width: 510,
+    width: 705,
     height: 575,
     type: Phaser.AUTO,
     parent: 'game',
-    scene: [BootScene, GameScene],
+    scene: [BootScene, GameScene, HUDScene],
     scale: {
         parent: 'phaser-game',
         mode: Phaser.Scale.FIT,

@@ -45,8 +45,15 @@ export class BootScene extends Phaser.Scene {
         this.load.image('flare', 'assets/particles/white-flare.png')
     }
 
+    init(): void {
+        this.registry.set('level', 1)
+        this.registry.set('score', 0)
+    }
+
     update(): void {
+        this.scene.start('HUDScene')
         this.scene.start('GameScene')
+        this.scene.bringToTop('HUDScene')
     }
 
     private createLoadingbar(): void {

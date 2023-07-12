@@ -320,14 +320,9 @@ export class GameScene extends Phaser.Scene {
                 onComplete: () => {
                     this.scoreText.setAlpha(0)
                     this.events.emit('scoreChanged')
-                    if (this.registry.values.score % 500 == 0 && this.registry.values.score > 0) {
-                        this.canMove = false
-                        this.isRedisting = false
-                        if (this.matchParticle) this.matchParticle.stop(true)
-                        this.isSuggested = true
-                        this.time.delayedCall(1000, () => {
-                            this.shuffle()
-                        })
+                    if (this.registry.values.score % 500 == 0) {
+                        this.matchParticle.stop(true)
+                        this.shuffle()
                     }
                 },
             })
@@ -339,7 +334,12 @@ export class GameScene extends Phaser.Scene {
                 lifespan: 250,
                 scale: { start: 0.5, end: 0.1 },
             })
-            const shape3 = new Phaser.Geom.Line(0, 0, -tempArr[0].x + 520, -tempArr[0].y + 100)
+            const shape3 = new Phaser.Geom.Rectangle(
+                -tempArr[0].width / 2,
+                -tempArr[0].height / 2,
+                -tempArr[0].x + tempArr[2].x + tempArr[2].width,
+                -tempArr[0].y + tempArr[2].y + tempArr[2].height
+            )
             emitter.addEmitZone({ type: 'edge', source: shape3, quantity: 32, total: 1 })
             this.time.delayedCall(500, () => {
                 emitter.stop()
@@ -452,6 +452,7 @@ export class GameScene extends Phaser.Scene {
             }
             if (groups.length > 0) matches.push(groups)
         }
+        console.log(matches)
         return matches
     }
 
@@ -515,14 +516,10 @@ export class GameScene extends Phaser.Scene {
                                         this.tileGrid[x2][y2],
                                         this.tileGrid[i][j],
                                     ]
-                                    if (!this.isSuggested && this.canMove) {
-                                        this.emitSuggestion(
-                                            matches[0],
-                                            this.tileGrid[i][j] as Tile,
-                                            this.tileGrid[x2][y2] as Tile
-                                        )
+                                    console.log(i, j, x2, y2)
+                                    if (!this.isSuggested) {
+                                        this.emitSuggestion(matches[0])
                                         this.isSuggested = true
-                                        this.isRedisting = false
                                     }
                                     return
                                 }
@@ -541,10 +538,7 @@ export class GameScene extends Phaser.Scene {
         }
     }
 
-    public emitSuggestion(tileGroup: Tile[], tile1: Tile, tile2: Tile) {
-        tile1.getAttracted()
-        tile2.getAttracted()
-
+    public emitSuggestion(tileGroup: Tile[]) {
         const [oriX, oriY] = [
             tileGroup.reduce((min, tile) => {
                 return Math.min(tile.x, min)
@@ -655,7 +649,6 @@ export class GameScene extends Phaser.Scene {
                     this.isSuggested = true
                     this.time.delayedCall(2000, () => {
                         this.checkMatches()
-                        this.canMove = true
                         if (this.matchParticle) {
                             this.matchParticle.stop()
                             this.matchParticle.setAlpha(1)

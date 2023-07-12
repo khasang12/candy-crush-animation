@@ -4,6 +4,8 @@ export class Tile extends Phaser.GameObjects.Sprite {
     private selectedShader: Phaser.GameObjects.Shader
     private tileGraphics: Phaser.GameObjects.Graphics
 
+    private suggestedTweens: Phaser.Tweens.Tween | undefined
+
     constructor(aParams: IImageConstructor) {
         super(aParams.scene, aParams.x, aParams.y, aParams.texture, aParams.frame)
 
@@ -67,6 +69,24 @@ export class Tile extends Phaser.GameObjects.Sprite {
 
     public getDeselected(): void {
         this.selectedShader.setVisible(false)
+    }
+
+    public getAttracted(): void {
+        if (!this.suggestedTweens) {
+            this.suggestedTweens = this.scene.tweens.add({
+                targets: this,
+                alpha: 0,
+                yoyo: true,
+                ease: 'sine.inout',
+                repeat: 1,
+                duration: 250,
+                onComplete: () => {
+                    this.suggestedTweens?.stop()
+                    this.suggestedTweens = undefined
+                    this.setAlpha(1)
+                },
+            })
+        }
     }
 }
 

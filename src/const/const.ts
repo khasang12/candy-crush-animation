@@ -19,4 +19,9 @@ export const CONST = {
         'starcookie1',
         'starcookie2',
     ],
+    shape: [
+        'triangle',
+        'rectangle',
+        'circle'
+    ],
 }
