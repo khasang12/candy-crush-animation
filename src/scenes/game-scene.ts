@@ -48,8 +48,8 @@ export class GameScene extends Phaser.Scene {
         // Text
         this.scoreText = this.add
             .text(-100, -100, '100', {
-                fontSize: '20px',
-                color: '#9a7fae',
+                fontSize: '24px',
+                color: '#000',
                 fontStyle: 'bold',
             })
             .setDepth(2)
@@ -321,10 +321,12 @@ export class GameScene extends Phaser.Scene {
             const tempArr = element
 
             // Score
-            this.scoreText.setPosition(tempArr[1].x - tempArr[1].width / 2, tempArr[1].y)
-
+            this.scoreText.setPosition(tempArr[1].x - 15, tempArr[1].y - 5)
+            const length = element.length
+            this.scoreText.setText(CONST.matchScore[length])
             this.scoreText.setAlpha(1)
-            this.registry.values.score += 100
+            this.registry.values.score += parseInt(CONST.matchScore[length])
+
             this.tweens.add({
                 targets: this,
                 alpha: 0,
@@ -551,7 +553,9 @@ export class GameScene extends Phaser.Scene {
                     }
                 }
             }
-            this.shuffle()
+            this.time.delayedCall(1000, () => {
+                this.shuffle()
+            })
         }
     }
 
