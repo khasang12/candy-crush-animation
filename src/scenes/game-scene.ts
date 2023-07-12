@@ -30,7 +30,7 @@ export class GameScene extends Phaser.Scene {
         this.isRedisting = false
 
         // set background color
-        this.cameras.main.setBackgroundColor(0x78aade)
+        this.cameras.main.setBackgroundColor(0xffd1dc)
 
         // Init grid with tiles
         this.tileGrid = []
@@ -50,7 +50,7 @@ export class GameScene extends Phaser.Scene {
             clearTimeout(this.inactivityTimer)
             if (this.idleTweens) this.idleTweens.stop()
 
-            this.inactivityTimer = setTimeout(() => this.getNextMove(), 2400)
+            this.inactivityTimer = setTimeout(() => this.getNextMove(), 3000)
             this.inactivityTimer = setTimeout(() => this.idle(), 5000)
         })
 
@@ -73,19 +73,13 @@ export class GameScene extends Phaser.Scene {
             for (let x = 0; x < CONST.gridWidth; x++) {
                 const initYPos = this.tileGrid[y][x]?.y
                 this.tileGrid[y][x]?.setY(-200)
-                if (initYPos) this.tileGrid[y][x]?.revealImageWithDelay(initYPos, i)
+                if (initYPos)
+                    this.tileGrid[y][x]?.revealImageWithDelay(
+                        this.tileGrid[y][x]?.x as number,
+                        initYPos,
+                        i
+                    )
                 i += 20
-            }
-        }
-    }
-
-    private revealTilesFromShape() {
-        for (let y = CONST.gridHeight - 1; y >= 0; y--) {
-            for (let x = 0; x < CONST.gridWidth; x++) {
-                const initYPos = this.tileGrid[y][x]?.y
-                const initXPos = this.tileGrid[y][x]?.x
-                this.tileGrid[y][x]?.setPosition(510 / 2, 575 / 2)
-                if (initXPos && initYPos) this.tileGrid[y][x]?.revealImage(initXPos, initYPos)
             }
         }
     }
@@ -123,7 +117,6 @@ export class GameScene extends Phaser.Scene {
             if (this.firstSelectedTile == undefined) {
                 this.firstSelectedTile = gameobject
                 this.firstSelectedTile.getSelected()
-                console.log(this.firstSelectedTile)
             } else {
                 // So if we are here, we must have selected a second tile
                 this.firstSelectedTile.getDeselected()
@@ -237,12 +230,6 @@ export class GameScene extends Phaser.Scene {
             this.tileUp()
             this.canMove = true
         }
-        this.time.delayedCall(0, () => {
-            if (this.matchParticle) {
-                this.isSuggested = false
-                this.matchParticle.stop()
-            }
-        })
     }
 
     private resetTile(): void {
@@ -275,16 +262,23 @@ export class GameScene extends Phaser.Scene {
 
     private fillTile(): void {
         //Check for blank spaces in the grid and add new tiles at that position
+        let isFill = false
         for (let y = 0; y < this.tileGrid.length; y++) {
             for (let x = 0; x < this.tileGrid[y].length; x++) {
                 if (this.tileGrid[y][x] === undefined) {
                     //Found a blank spot so lets add animate a tile there
-                    console.log('fill', y, x)
                     const tile = this.addTile(x, y, 50)
                     //And also update our "theoretical" grid
                     this.tileGrid[y][x] = tile
+                    isFill = true
                 }
             }
+        }
+        if (this.matchParticle && isFill) {
+            this.time.delayedCall(1000, () => {
+                this.matchParticle.stop()
+                this.isSuggested = false
+            })
         }
     }
 
@@ -455,56 +449,58 @@ export class GameScene extends Phaser.Scene {
     }
 
     private getNextMove(): void {
-        for (let i = 0; i < this.tileGrid.length; i++) {
-            for (let j = 0; j < this.tileGrid.length; j++) {
-                if (this.tileGrid[i][j] !== undefined) {
-                    for (const [dx, dy] of [
-                        [1, 0],
-                        [-1, 0],
-                        [0, 1],
-                        [0, -1],
-                    ]) {
-                        const x2 = i + dx
-                        const y2 = j + dy
-                        if (
-                            x2 >= 0 &&
-                            x2 < this.tileGrid.length &&
-                            y2 >= 0 &&
-                            y2 < this.tileGrid.length &&
-                            this.tileGrid[x2][y2] !== undefined
-                        ) {
-                            // Swap the candies
-                            // eslint-disable-next-line @typescript-eslint/no-extra-semi
-                            ;[this.tileGrid[i][j], this.tileGrid[x2][y2]] = [
-                                this.tileGrid[x2][y2],
-                                this.tileGrid[i][j],
-                            ]
-                            // Calculate the score of the new this.tileGrid
-                            const matches = this.getMatches(<Tile[][]>this.tileGrid)
-                            if (matches.length > 0) {
+        if (!this.isSuggested) {
+            for (let i = 0; i < this.tileGrid.length; i++) {
+                for (let j = 0; j < this.tileGrid.length; j++) {
+                    if (this.tileGrid[i][j] !== undefined) {
+                        for (const [dx, dy] of [
+                            [1, 0],
+                            [-1, 0],
+                            [0, 1],
+                            [0, -1],
+                        ]) {
+                            const x2 = i + dx
+                            const y2 = j + dy
+                            if (
+                                x2 >= 0 &&
+                                x2 < this.tileGrid.length &&
+                                y2 >= 0 &&
+                                y2 < this.tileGrid.length &&
+                                this.tileGrid[x2][y2] !== undefined
+                            ) {
+                                // Swap the candies
                                 // eslint-disable-next-line @typescript-eslint/no-extra-semi
                                 ;[this.tileGrid[i][j], this.tileGrid[x2][y2]] = [
                                     this.tileGrid[x2][y2],
                                     this.tileGrid[i][j],
                                 ]
-                                if (!this.isSuggested) {
-                                    this.emitSuggestion(matches[0])
-                                    this.isSuggested = true
+                                // Calculate the score of the new this.tileGrid
+                                const matches = this.getMatches(<Tile[][]>this.tileGrid)
+                                if (matches.length > 0) {
+                                    // eslint-disable-next-line @typescript-eslint/no-extra-semi
+                                    ;[this.tileGrid[i][j], this.tileGrid[x2][y2]] = [
+                                        this.tileGrid[x2][y2],
+                                        this.tileGrid[i][j],
+                                    ]
+                                    if (!this.isSuggested) {
+                                        this.emitSuggestion(matches[0])
+                                        this.isSuggested = true
+                                    }
+                                    return
                                 }
-                                return
+                                // Swap the candies back to their original positions
+                                // eslint-disable-next-line @typescript-eslint/no-extra-semi
+                                ;[this.tileGrid[i][j], this.tileGrid[x2][y2]] = [
+                                    this.tileGrid[x2][y2],
+                                    this.tileGrid[i][j],
+                                ]
                             }
-                            // Swap the candies back to their original positions
-                            // eslint-disable-next-line @typescript-eslint/no-extra-semi
-                            ;[this.tileGrid[i][j], this.tileGrid[x2][y2]] = [
-                                this.tileGrid[x2][y2],
-                                this.tileGrid[i][j],
-                            ]
                         }
                     }
                 }
             }
+            this.emitRedistribution()
         }
-        this.emitRedistribution()
     }
 
     public emitSuggestion(tileGroup: Tile[]) {
@@ -540,36 +536,68 @@ export class GameScene extends Phaser.Scene {
         if (!this.isRedisting) {
             this.isRedisting = true
             const circle = new Phaser.Geom.Circle(300, 400, 200)
+            const triangle = new Phaser.Geom.Triangle(
+                510 / 2,
+                575 / 2 - 200,
+                510 / 2 - 200 * Math.cos(Math.PI / 6),
+                575 / 2 + 200 * Math.sin(Math.PI / 6),
+                510 / 2 + 200 * Math.cos(Math.PI / 6),
+                575 / 2 + 200 * Math.sin(Math.PI / 6)
+            )
+            const square = new Phaser.Geom.Rectangle(
+                510 / 2 - 200 * Math.cos(Math.PI / 4),
+                575 / 2 - 200 * Math.sin(Math.PI / 4),
+                400 * Math.cos(Math.PI / 4),
+                400 * Math.cos(Math.PI / 4)
+            )
             const objects = <Phaser.GameObjects.Sprite[]>this.tileGrid.flat()
             const group = this.add.group(objects)
-            Phaser.Actions.PlaceOnCircle(group.getChildren(), circle)
-
+            //Phaser.Actions.PlaceOnCircle(group.getChildren(), circle)
+            //Phaser.Actions.PlaceOnTriangle(group.getChildren(), triangle)
+            Phaser.Actions.PlaceOnRectangle(group.getChildren(), square)
             this.tweens.add({
                 targets: circle,
                 radius: 200,
                 ease: 'sine.inout',
                 yoyo: true,
-                duration: 500,
+                duration: 1000,
                 onUpdate: function () {
-                    Phaser.Actions.RotateAroundDistance(
+                    Phaser.Actions.RotateAround(objects, { x: 510 / 2, y: 575 / 2 }, 0.02)
+                    /* Phaser.Actions.RotateAroundDistance(
                         objects,
                         { x: 510 / 2, y: 575 / 2 },
                         0.02,
                         circle.radius
-                    )
+                    ) */
                 },
                 onComplete: () => {
+                    clearTimeout(this.inactivityTimer)
                     this.isRedisting = false
+                    let i = 200
                     for (let y = 0; y < CONST.gridHeight; y++) {
                         for (let x = 0; x < CONST.gridWidth; x++) {
-                            this.tileGrid[y][x]?.destroy()
-                            this.tileGrid[y][x] = this.addTile(x, y).setAlpha(0)
+                            const randomTileType: string =
+                                CONST.candyTypes[
+                                    Phaser.Math.RND.between(0, CONST.candyTypes.length - 1)
+                                ]
+                            this.tileGrid[y][x]?.setTexture(randomTileType)
+                            this.tileGrid[y][x]?.revealImageWithDelay(
+                                x * CONST.tileWidth + CONST.tileWidth / 2,
+                                y * CONST.tileHeight + CONST.tileHeight / 2,
+                                i
+                            )
+                            i += 10
                         }
                     }
-                    this.revealTilesFromShape()
+                    //this.revealTilesFromShape()
+                    this.isSuggested = true // this was done to defer board hint
                     // Check if matches on the start
                     this.time.delayedCall(2000, () => {
                         this.checkMatches()
+                        if (this.matchParticle) {
+                            this.matchParticle.stop()
+                            this.isSuggested = false
+                        }
                     })
                 },
             })
