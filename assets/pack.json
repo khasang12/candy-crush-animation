@@ -2,6 +2,12 @@
   "preload": {
     "files": [
       {
+          "type": "bitmapFont",
+          "key": "font",
+          "textureURL": "./assets/fonts/desyrel.png",
+          "fontDataURL": "./assets/fonts/desyrel.xml"
+      },
+      {
         "type": "image",
         "key": "cookie1",
         "url": "./assets/images/cookie1.png"
