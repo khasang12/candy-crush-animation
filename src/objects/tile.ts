@@ -1,10 +1,12 @@
 import { IImageConstructor } from '../interfaces/image.interface'
 
 export class Tile extends Phaser.GameObjects.Sprite {
+    private match4FX: Phaser.FX.Glow
     private selectedShader: Phaser.GameObjects.Shader
     private tileGraphics: Phaser.GameObjects.Graphics
 
-    private suggestedTweens: Phaser.Tweens.Tween | undefined
+    private suggestedTween: Phaser.Tweens.Tween | undefined
+    private match4Tween: Phaser.Tweens.Tween | undefined
 
     constructor(aParams: IImageConstructor) {
         super(aParams.scene, aParams.x, aParams.y, aParams.texture, aParams.frame)
@@ -22,6 +24,7 @@ export class Tile extends Phaser.GameObjects.Sprite {
                 targets: this,
                 y: initYPos,
                 ease: 'Power3',
+                autoDestroy: true,
                 duration: 300,
                 delay: aParams.delay,
             })
@@ -46,6 +49,9 @@ export class Tile extends Phaser.GameObjects.Sprite {
             this.height + borderWidth - 8,
             12
         )
+
+        // Tile Glowed
+        this.preFX?.setPadding(32)
     }
 
     public revealImageWithDelay(x: number, y: number, delay: number): void {
@@ -55,6 +61,7 @@ export class Tile extends Phaser.GameObjects.Sprite {
             y: y,
             alpha: 1,
             ease: 'Power3',
+            autoDestroy: true,
             duration: 800,
             delay: delay,
         })
@@ -72,21 +79,58 @@ export class Tile extends Phaser.GameObjects.Sprite {
     }
 
     public getAttracted(): void {
-        if (!this.suggestedTweens) {
-            this.suggestedTweens = this.scene.tweens.add({
+        if (!this.suggestedTween) {
+            this.suggestedTween = this.scene.tweens.add({
                 targets: this,
-                alpha: 0,
+                scale: 0.9,
                 yoyo: true,
                 ease: 'sine.inout',
+                autoDestroy: true,
                 repeat: 1,
                 duration: 250,
                 onComplete: () => {
-                    this.suggestedTweens?.stop()
-                    this.suggestedTweens = undefined
+                    this.suggestedTween?.stop()
+                    this.suggestedTween = undefined
                     this.setAlpha(1)
                 },
             })
         }
+    }
+
+    public enableGlow(): void {
+        this.match4FX = this.preFX?.addGlow() as Phaser.FX.Glow
+        this.match4Tween = this.scene.tweens.add({
+            targets: this.match4FX,
+            outerStrength: 15,
+            yoyo: true,
+            loop: -1,
+            ease: 'sine.inout',
+        })
+    }
+
+    public disableGlow(): void {
+        if (this.match4FX) {
+            this.match4Tween?.destroy()
+            this.match4FX.destroy()
+            this.match4Tween = undefined
+        }
+    }
+
+    public isGlow(): boolean {
+        return this.match4Tween != undefined
+    }
+
+    public shake(): void {
+        this.scene.tweens.add({
+            targets: this,
+            scale: 0,
+            ease: 'bounce.inout',
+            autoDestroy: true,
+            duration: 50,
+            onComplete: () => {
+                this.destroy()
+            },
+        })
     }
 }
 

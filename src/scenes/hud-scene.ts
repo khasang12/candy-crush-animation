@@ -82,7 +82,7 @@ export class HUDScene extends Phaser.Scene {
             x: 100,
             y: 150,
             scale: 3,
-            duration: 1000,
+            duration: 500,
             ease: 'cubic.out',
             yoyo: true,
             onStart: () => {

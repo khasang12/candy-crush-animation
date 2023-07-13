@@ -6,12 +6,14 @@ export class GameScene extends Phaser.Scene {
     private idleTweens: Phaser.Tweens.Tween
     private matchParticle: Phaser.GameObjects.Particles.ParticleEmitter
     private confettiParticle: Phaser.GameObjects.Particles.ParticleEmitter
+    private explodeParticle: Phaser.GameObjects.Particles.ParticleEmitter
 
     // Variables
     private canMove: boolean
     private inactivityTimer: NodeJS.Timeout
     private isSuggested: boolean
     private isRedisting: boolean
+    private isRemoving: boolean
 
     // Texts
     private scoreText: Phaser.GameObjects.Text
@@ -32,6 +34,7 @@ export class GameScene extends Phaser.Scene {
         this.canMove = true
         this.isSuggested = false
         this.isRedisting = false
+        this.isRemoving = false
 
         this.confettiParticle = this.add.particles(300, 100, 'flares', {
             frame: ['red', 'yellow', 'green'],
@@ -55,7 +58,7 @@ export class GameScene extends Phaser.Scene {
             .setDepth(2)
 
         // set background color
-        this.cameras.main.setBackgroundColor(0xffd1dc)
+        this.cameras.main.setBackgroundColor(0x00264d)
 
         // Init grid with tiles
         this.tileGrid = []
@@ -239,19 +242,19 @@ export class GameScene extends Phaser.Scene {
         //Call the getMatches function to check for spots where there is
         //a run of three or more tiles in a row
         const matches = this.getMatches(<Tile[][]>this.tileGrid)
-
+        console.log(matches, this.isRemoving)
         //If there are matches, remove them
-        if (matches.length > 0) {
-            //Remove the tiles
+        if (matches.length > 0 && !this.isRemoving) {
             this.removeTileGroup(matches)
-            // Move the tiles currently on the board into their new positions
-            this.resetTile()
-            this.fillTile()
-            this.tileUp()
-            this.checkMatches()
+            this.time.delayedCall(300, () => {
+                this.resetTile()
+                this.fillTile()
+                this.tileUp()
+                this.checkMatches()
+            })
         } else {
             // No match so just swap the tiles back to their original position and reset
-            this.swapTiles()
+            //this.swapTiles()
             this.tileUp()
             this.canMove = true
         }
@@ -317,9 +320,9 @@ export class GameScene extends Phaser.Scene {
 
     private removeTileGroup(matches: any): void {
         // Loop through all the matches and remove the associated tiles
+        this.isRemoving = true
         for (const element of matches) {
             const tempArr = element
-
             // Score
             this.scoreText.setPosition(tempArr[1].x - 15, tempArr[1].y - 5)
             const length = element.length
@@ -332,6 +335,7 @@ export class GameScene extends Phaser.Scene {
                 alpha: 0,
                 duration: 500,
                 ease: 'sine.inout',
+                autoDestroy: true,
                 onComplete: () => {
                     this.scoreText.setAlpha(0)
                     this.events.emit('scoreChanged')
@@ -355,22 +359,112 @@ export class GameScene extends Phaser.Scene {
                 lifespan: 250,
                 scale: { start: 0.5, end: 0.1 },
             })
-            const shape3 = new Phaser.Geom.Line(0, 0, -tempArr[0].x + 520, -tempArr[0].y + 100)
-            emitter.addEmitZone({ type: 'edge', source: shape3, quantity: 32, total: 1 })
+
+            const line = new Phaser.Geom.Line(0, 0, -tempArr[0].x + 520, -tempArr[0].y + 100)
+
+            if (tempArr[0].isGlow() || tempArr[1].isGlow() || tempArr[2].isGlow()) {
+                // Explode
+                const peri = new Phaser.Geom.Rectangle(
+                    tempArr[1].x - (3 * tempArr[0].width) / 2,
+                    tempArr[1].y - (3 * tempArr[0].height) / 2,
+                    3 * tempArr[0].width,
+                    3 * tempArr[0].height
+                )
+
+                this.explodeParticle = this.add.particles(0, 0, 'flare', {
+                    speed: 24,
+                    lifespan: 1500,
+                    quantity: 10,
+                    scale: { start: 0.3, end: 0 },
+                    emitting: false,
+                    emitZone: {
+                        type: 'edge',
+                        source: peri,
+                        quantity: 22,
+                    },
+                    duration: 300,
+                })
+
+                this.explodeParticle.start(0, 300)
+
+                //TODO: Destroy 3x3 in Zone
+                const isVert = tempArr[0].x == tempArr[1].x
+                for (const element of tempArr) {
+                    const tile = element
+                    //Find where this tile lives in the theoretical grid
+                    const tilePos = this.getTilePos(<Tile[][]>this.tileGrid, tile)
+                    if (tilePos.x !== -1 && tilePos.y !== -1) {
+                        if (!isVert) {
+                            if (tilePos.y > 0 && this.tileGrid[tilePos.y - 1][tilePos.x]) {
+                                this.tileGrid[tilePos.y - 1][tilePos.x]?.destroy()
+                                this.tileGrid[tilePos.y - 1][tilePos.x] = undefined
+                            }
+                            if (tilePos.y < 7 && this.tileGrid[tilePos.y + 1][tilePos.x]) {
+                                this.tileGrid[tilePos.y + 1][tilePos.x]?.destroy()
+                                this.tileGrid[tilePos.y + 1][tilePos.x] = undefined
+                            }
+                        } else {
+                            if (tilePos.x > 0 && this.tileGrid[tilePos.y][tilePos.x - 1]) {
+                                this.tileGrid[tilePos.y][tilePos.x - 1]?.destroy()
+                                this.tileGrid[tilePos.y][tilePos.x - 1] = undefined
+                            }
+                            if (tilePos.x < 7 && this.tileGrid[tilePos.y][tilePos.x + 1]) {
+                                this.tileGrid[tilePos.y][tilePos.x + 1]?.destroy()
+                                this.tileGrid[tilePos.y][tilePos.x + 1] = undefined
+                            }
+                        }
+                    }
+                }
+            }
+
+            
+
+            emitter.addEmitZone({ type: 'edge', source: line, quantity: 32, total: 1 })
             this.time.delayedCall(500, () => {
                 emitter.stop()
             })
 
-            for (const element of tempArr) {
-                const tile = element
-                //Find where this tile lives in the theoretical grid
-                const tilePos = this.getTilePos(<Tile[][]>this.tileGrid, tile)
+            // Removal
+            switch (tempArr.length) {
+                case 3:
+                    for (const element of tempArr) {
+                        const tile = element
+                        //Find where this tile lives in the theoretical grid
+                        const tilePos = this.getTilePos(<Tile[][]>this.tileGrid, tile)
+                        if (tilePos.x !== -1 && tilePos.y !== -1) {
+                            tile.destroy()
+                            this.tileGrid[tilePos.y][tilePos.x] = undefined
+                        }
+                    }
+                    this.isRemoving = false
+                    break
+                case 4:
+                    this.tweens.add({
+                        targets: [tempArr[0], tempArr[1], tempArr[2]],
+                        x: tempArr[3].x,
+                        y: tempArr[3].y,
+                        duration: 200,
+                        autoDestroy: true,
+                        ease: 'sine.in',
+                        onComplete: () => {
+                            for (let i = 0; i < 3; i++) {
+                                const tile = tempArr[i]
+                                // Find where this tile lives in the theoretical grid
+                                const tilePos = this.getTilePos(<Tile[][]>this.tileGrid, tile)
 
-                // Remove the tile from the theoretical grid
-                if (tilePos.x !== -1 && tilePos.y !== -1) {
-                    tile.destroy()
-                    this.tileGrid[tilePos.y][tilePos.x] = undefined
-                }
+                                // Combinative Effect
+
+                                if (tilePos.x !== -1 && tilePos.y !== -1) {
+                                    tile.destroy()
+                                    this.tileGrid[tilePos.y][tilePos.x] = undefined
+                                }
+                            }
+                            this.isRemoving = false
+                            tempArr[3].enableGlow()
+                        },
+                    })
+
+                    break
             }
         }
     }
@@ -480,6 +574,7 @@ export class GameScene extends Phaser.Scene {
                     scale: 0.5,
                     ease: 'sine.inout',
                     duration: 300,
+                    autoDestroy: true,
                     delay: i * 50,
                     repeat: 2,
                     yoyo: true,
@@ -636,6 +731,7 @@ export class GameScene extends Phaser.Scene {
                 ease: 'sine.inout',
                 yoyo: true,
                 duration: 1000,
+                autoDestroy: true,
                 onStart: () => {
                     if (this.matchParticle) {
                         this.matchParticle.stop(true)
