@@ -3,8 +3,9 @@ import { IImageConstructor } from '../interfaces/image.interface'
 export class Tile extends Phaser.GameObjects.Sprite {
     private isGlow4: boolean
     private isGlow5: boolean
-    private match4FX: Phaser.FX.Glow
-    private match5FX: Phaser.FX.Wipe
+    private matchGlow4FX: Phaser.FX.Glow
+    private matchGlow5FX: Phaser.FX.Glow
+    private matchWipe5FX: Phaser.FX.Wipe
     private selectedShader: Phaser.GameObjects.Shader
     private tileGraphics: Phaser.GameObjects.Graphics
 
@@ -55,6 +56,10 @@ export class Tile extends Phaser.GameObjects.Sprite {
 
         // Tile Glowed
         this.preFX?.setPadding(32)
+        this.matchGlow4FX = this.preFX?.addGlow() as Phaser.FX.Glow
+        this.matchGlow4FX.setActive(false)
+        this.matchGlow5FX = this.preFX?.addGlow(0xffff00, 4, 0, false, 0.1, 32) as Phaser.FX.Glow
+        this.matchGlow5FX.setActive(false)
     }
 
     public revealImageWithDelay(x: number, y: number, delay: number): void {
@@ -102,9 +107,9 @@ export class Tile extends Phaser.GameObjects.Sprite {
 
     public enableGlow4(): void {
         this.isGlow4 = true
-        this.match4FX = this.preFX?.addGlow() as Phaser.FX.Glow
+        this.matchGlow4FX.setActive(true)
         this.match4Tween = this.scene?.tweens.add({
-            targets: this.match4FX,
+            targets: this.matchGlow4FX,
             outerStrength: 15,
             yoyo: true,
             loop: -1,
@@ -114,9 +119,9 @@ export class Tile extends Phaser.GameObjects.Sprite {
 
     public enableGlow5(): void {
         this.isGlow5 = true
-        this.match4FX = this.preFX?.addGlow(0xffff00, 4, 0, false, 0.1, 32) as Phaser.FX.Glow
+        this.matchGlow5FX.setActive(true)
         this.match4Tween = this.scene?.tweens.add({
-            targets: this.match4FX,
+            targets: this.matchGlow5FX,
             outerStrength: 25,
             yoyo: true,
             loop: -1,
@@ -125,13 +130,12 @@ export class Tile extends Phaser.GameObjects.Sprite {
     }
 
     public disableGlow(): void {
-        if (this.match4FX) {
-            this.match4Tween?.destroy()
-            this.match4FX.destroy()
-            this.match4Tween = undefined
-            this.isGlow4 = false
-            this.isGlow5 = false
-        }
+        this.matchGlow4FX.setActive(false)
+        this.matchGlow5FX.setActive(false)
+        this.match4Tween?.destroy()
+        this.match4Tween = undefined
+        this.isGlow4 = false
+        this.isGlow5 = false
     }
 
     public isGlowed4(): boolean {
@@ -157,22 +161,23 @@ export class Tile extends Phaser.GameObjects.Sprite {
 
     public wipe(direction: string, delay: number): void {
         if (direction == 'UP') {
-            this.match5FX = this.preFX?.addWipe(0.3, 1, 0) as Phaser.FX.Wipe
+            this.matchWipe5FX = this.preFX?.addWipe(0.3, 1, 0) as Phaser.FX.Wipe
         } else if (direction == 'DOWN') {
-            this.match5FX = this.preFX?.addWipe(0.3, 0, 0) as Phaser.FX.Wipe
+            this.matchWipe5FX = this.preFX?.addWipe(0.3, 0, 0) as Phaser.FX.Wipe
         } else if (direction == 'LEFT') {
-            this.match5FX = this.preFX?.addWipe(0.3, 1, 1) as Phaser.FX.Wipe
+            this.matchWipe5FX = this.preFX?.addWipe(0.3, 1, 1) as Phaser.FX.Wipe
         } else if (direction == 'RIGHT') {
-            this.match5FX = this.preFX?.addWipe(0.3, 0, 1) as Phaser.FX.Wipe
+            this.matchWipe5FX = this.preFX?.addWipe(0.3, 0, 1) as Phaser.FX.Wipe
         }
         this.scene.tweens.add({
-            targets: this.match5FX,
+            targets: this.matchWipe5FX,
             progress: 1,
             duration: 300,
             easing: 'cubic.in',
             delay: delay,
             onComplete: () => {
-                this.destroy()
+                this.setActive(false)
+                this.setAlpha(0)
             },
         })
     }
