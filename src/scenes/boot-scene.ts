@@ -41,10 +41,24 @@ export class BootScene extends Phaser.Scene {
 
         // load out package
         this.load.pack('preload', './assets/pack.json', 'preload')
+        this.load.atlas('flares', 'assets/particles/flares.png', 'assets/particles/flares.json')
+        this.load.image('flare', 'assets/particles/white-flare.png')
+        this.load.image('pixel-yellow', 'assets/particles/pixel_yellow.png')
+        this.load.image('pixel-white', 'assets/particles/pixel_white.png')
+        this.load.image('pixel-red', 'assets/particles/pixel_red.png')
+        this.load.image('pixel-green', 'assets/particles/pixel_green.png')
+        this.load.image('pixel-blue', 'assets/particles/pixel_blue.png')
+    }
+
+    init(): void {
+        this.registry.set('level', 1)
+        this.registry.set('score', 0)
     }
 
     update(): void {
+        this.scene.start('HUDScene')
         this.scene.start('GameScene')
+        this.scene.bringToTop('HUDScene')
     }
 
     private createLoadingbar(): void {

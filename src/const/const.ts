@@ -19,4 +19,6 @@ export const CONST = {
         'starcookie1',
         'starcookie2',
     ],
+    shape: ['triangle', 'rectangle', 'circle'],
+    matchScore: ['0', '0', '0', '100', '200', '300', '400', '500'],
 }
