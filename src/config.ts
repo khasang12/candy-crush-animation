@@ -18,4 +18,8 @@ export const GameConfig: Phaser.Types.Core.GameConfig = {
     },
     backgroundColor: '#ffd1dc',
     render: { pixelArt: false, antialias: true },
+    fps: {
+        target: 60,
+        forceSetTimeOut: true,
+    },
 }

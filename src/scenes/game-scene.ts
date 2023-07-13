@@ -362,7 +362,11 @@ export class GameScene extends Phaser.Scene {
 
             const line = new Phaser.Geom.Line(0, 0, -tempArr[0].x + 520, -tempArr[0].y + 100)
 
-            if (tempArr[0].isGlow() || tempArr[1].isGlow() || tempArr[2].isGlow()) {
+            let [isGlow4, isGlow5] = [false, false]
+            for (const ele of tempArr) if (ele.isGlowed5()) isGlow5 = true
+            if (!isGlow5) for (const ele of tempArr) if (ele.isGlowed4()) isGlow4 = true
+
+            if (isGlow4) {
                 // Explode
                 const peri = new Phaser.Geom.Rectangle(
                     tempArr[1].x - (3 * tempArr[0].width) / 2,
@@ -387,7 +391,6 @@ export class GameScene extends Phaser.Scene {
 
                 this.explodeParticle.start(0, 300)
 
-                //TODO: Destroy 3x3 in Zone
                 const isVert = tempArr[0].x == tempArr[1].x
                 for (const element of tempArr) {
                     const tile = element
@@ -415,9 +418,42 @@ export class GameScene extends Phaser.Scene {
                         }
                     }
                 }
-            }
+                for (const ele of tempArr) ele.disableGlow()
+            } else if (isGlow5) {
+                const midTilePos = this.getTilePos(
+                    <Tile[][]>this.tileGrid,
+                    tempArr[Math.floor(tempArr.length / 2)]
+                )
+                console.log(midTilePos)
+                if (midTilePos.x !== -1 && midTilePos.y !== -1) {
+                    for (let l = midTilePos.y - 1; l >= 0; l--) {
+                        if (this.tileGrid[l][midTilePos.x]) {
+                            this.tileGrid[l][midTilePos.x]?.wipe('LEFT', (midTilePos.y - 1 - l) * 10)
+                            this.tileGrid[l][midTilePos.x] = undefined
+                        }
+                    }
+                    for (let r = midTilePos.y + 1; r < 8; r++) {
+                        if (this.tileGrid[r][midTilePos.x]) {
+                            this.tileGrid[r][midTilePos.x]?.wipe('RIGHT', (r - midTilePos.y) * 10)
+                            this.tileGrid[r][midTilePos.x] = undefined
+                        }
+                    }
+                    for (let u = midTilePos.x - 1; u >= 0; u--) {
+                        if (this.tileGrid[midTilePos.y][u]) {
+                            this.tileGrid[midTilePos.y][u]?.wipe('UP', (midTilePos.x - 1 - u) * 10)
+                            this.tileGrid[midTilePos.y][u] = undefined
+                        }
+                    }
+                    for (let d = midTilePos.x + 1; d < 8; d++) {
+                        if (this.tileGrid[midTilePos.y][d]) {
+                            this.tileGrid[midTilePos.y][d]?.wipe('DOWN', (d - midTilePos.x) * 10)
+                            this.tileGrid[midTilePos.y][d] = undefined
+                        }
+                    }
+                }
 
-            
+                for (const ele of tempArr) ele.disableGlow()
+            }
 
             emitter.addEmitZone({ type: 'edge', source: line, quantity: 32, total: 1 })
             this.time.delayedCall(500, () => {
@@ -440,30 +476,53 @@ export class GameScene extends Phaser.Scene {
                     break
                 case 4:
                     this.tweens.add({
-                        targets: [tempArr[0], tempArr[1], tempArr[2]],
-                        x: tempArr[3].x,
-                        y: tempArr[3].y,
+                        targets: [tempArr[0], tempArr[3], tempArr[1]],
+                        x: tempArr[2].x,
+                        y: tempArr[2].y,
                         duration: 200,
                         autoDestroy: true,
                         ease: 'sine.in',
                         onComplete: () => {
-                            for (let i = 0; i < 3; i++) {
+                            for (let i = 0; i < 4; i++) {
                                 const tile = tempArr[i]
                                 // Find where this tile lives in the theoretical grid
                                 const tilePos = this.getTilePos(<Tile[][]>this.tileGrid, tile)
-
+                                if (i == 2) continue
                                 // Combinative Effect
-
                                 if (tilePos.x !== -1 && tilePos.y !== -1) {
                                     tile.destroy()
                                     this.tileGrid[tilePos.y][tilePos.x] = undefined
                                 }
                             }
                             this.isRemoving = false
-                            tempArr[3].enableGlow()
+                            tempArr[2].enableGlow4()
                         },
                     })
-
+                    break
+                case 5:
+                    this.tweens.add({
+                        targets: [tempArr[0], tempArr[1], tempArr[3], tempArr[4]],
+                        x: tempArr[2].x,
+                        y: tempArr[2].y,
+                        duration: 200,
+                        autoDestroy: true,
+                        ease: 'sine.in',
+                        onComplete: () => {
+                            for (let i = 0; i < 5; i++) {
+                                const tile = tempArr[i]
+                                // Find where this tile lives in the theoretical grid
+                                const tilePos = this.getTilePos(<Tile[][]>this.tileGrid, tile)
+                                if (i == 2) continue
+                                // Combinative Effect
+                                if (tilePos.x !== -1 && tilePos.y !== -1) {
+                                    tile.destroy()
+                                    this.tileGrid[tilePos.y][tilePos.x] = undefined
+                                }
+                            }
+                            this.isRemoving = false
+                            tempArr[2].enableGlow5()
+                        },
+                    })
                     break
             }
         }
@@ -541,11 +600,9 @@ export class GameScene extends Phaser.Scene {
                             tileGrid[i][j].texture.key === tileGrid[i + 1][j].texture.key &&
                             tileGrid[i + 1][j].texture.key === tileGrid[i + 2][j].texture.key
                         ) {
-                            if (groups.length > 0) {
-                                if (groups.indexOf(tileGrid[i][j]) == -1) {
-                                    matches.push(groups)
-                                    groups = []
-                                }
+                            if (groups.length > 0 && groups.indexOf(tileGrid[i][j]) == -1) {
+                                matches.push(groups)
+                                groups = []
                             }
 
                             if (groups.indexOf(tileGrid[i][j]) == -1) {
@@ -582,9 +639,7 @@ export class GameScene extends Phaser.Scene {
                         this.idleTweens.destroy()
                     },
                 })
-
                 time++
-
                 if (time % 8 === 0) {
                     time = 0
                 }

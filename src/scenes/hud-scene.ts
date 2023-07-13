@@ -84,11 +84,10 @@ export class HUDScene extends Phaser.Scene {
             scale: 3,
             duration: 500,
             ease: 'cubic.out',
+            delay: 500,
             yoyo: true,
-            onStart: () => {
-                this.target += 500
-            },
             onComplete: () => {
+                this.target += 500
                 this.textElements.get('TARGET')?.setText(`Goal: ${this.target}`)
                 this.textElements
                     .get('LEVEL')
