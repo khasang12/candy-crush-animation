@@ -7,6 +7,7 @@ export class GameScene extends Phaser.Scene {
     private matchParticle: Phaser.GameObjects.Particles.ParticleEmitter
     private confettiParticle: Phaser.GameObjects.Particles.ParticleEmitter
     private explodeParticle: Phaser.GameObjects.Particles.ParticleEmitter
+    private match3x3Particle: Phaser.GameObjects.Particles.ParticleEmitter
 
     // Variables
     private canMove: boolean
@@ -36,23 +37,11 @@ export class GameScene extends Phaser.Scene {
         this.isRedisting = false
         this.isRemoving = false
 
-        this.confettiParticle = this.add.particles(300, 100, 'flares', {
-            frame: ['red', 'yellow', 'green'],
-            lifespan: 2000,
-            speed: { min: 50, max: 300 },
-            angle: { min: 0, max: 180 },
-            scale: { start: 0.15, end: 0 },
-            gravityY: 100,
-            blendMode: 'ADD',
-            emitting: false,
-            frequency: 60,
-        })
-
         // Text
         this.scoreText = this.add
             .text(-100, -100, '100', {
                 fontSize: '24px',
-                color: '#000',
+                color: '#fff',
                 fontStyle: 'bold',
             })
             .setDepth(2)
@@ -92,6 +81,45 @@ export class GameScene extends Phaser.Scene {
         // Check if matches on the start
         this.time.delayedCall(2000, () => {
             this.checkMatches()
+        })
+
+        // emitters
+        this.confettiParticle = this.add.particles(300, 100, 'flares', {
+            frame: ['red', 'yellow', 'green'],
+            lifespan: 2000,
+            speed: { min: 50, max: 300 },
+            angle: { min: 0, max: 180 },
+            scale: { start: 0.15, end: 0 },
+            gravityY: 100,
+            blendMode: 'ADD',
+            emitting: false,
+            frequency: 60,
+        })
+
+        this.matchParticle = this.add.particles(0, 0, 'flares', {
+            frame: { frames: ['red', 'green', 'blue'], cycle: true },
+            blendMode: 'ADD',
+            lifespan: 500,
+            emitting: false,
+            scale: { start: 0.5, end: 0.1 },
+            duration: 500,
+        })
+
+        this.explodeParticle = this.add.particles(0, 0, 'flare', {
+            speed: 24,
+            lifespan: 1500,
+            quantity: 10,
+            scale: { start: 0.3, end: 0 },
+            emitting: false,
+            duration: 300,
+        })
+
+        this.match3x3Particle = this.add.particles(0, 0, 'flares', {
+            frame: { frames: ['red', 'green', 'blue'], cycle: true },
+            blendMode: 'ADD',
+            lifespan: 250,
+            emitting: false,
+            scale: { start: 0.5, end: 0.1 },
         })
     }
 
@@ -211,6 +239,7 @@ export class GameScene extends Phaser.Scene {
                 duration: 600,
                 repeat: 0,
                 yoyo: false,
+                autoDestroy: true,
             })
 
             this.add.tween({
@@ -225,6 +254,7 @@ export class GameScene extends Phaser.Scene {
                     this.checkMatches()
                     this.canMove = true
                 },
+                autoDestroy: true,
             })
 
             this.firstSelectedTile =
@@ -242,7 +272,7 @@ export class GameScene extends Phaser.Scene {
         //Call the getMatches function to check for spots where there is
         //a run of three or more tiles in a row
         const matches = this.getMatches(<Tile[][]>this.tileGrid)
-        console.log(matches, this.isRemoving)
+
         //If there are matches, remove them
         if (matches.length > 0 && !this.isRemoving) {
             this.removeTileGroup(matches)
@@ -282,6 +312,7 @@ export class GameScene extends Phaser.Scene {
                         onComplete: () => {
                             x = this.tileGrid[y].length
                         },
+                        autoDestroy: true,
                     })
                 }
             }
@@ -291,6 +322,7 @@ export class GameScene extends Phaser.Scene {
     private fillTile(): void {
         //Check for blank spaces in the grid and add new tiles at that position
         let isFill = false
+        this.canMove = false
         for (let y = 0; y < this.tileGrid.length; y++) {
             for (let x = 0; x < this.tileGrid[y].length; x++) {
                 if (this.tileGrid[y][x] === undefined) {
@@ -302,12 +334,13 @@ export class GameScene extends Phaser.Scene {
                 }
             }
         }
-        if (this.matchParticle && isFill) {
-            this.time.delayedCall(1000, () => {
+        this.time.delayedCall(1000, () => {
+            if (this.matchParticle && isFill) {
                 this.matchParticle.stop()
                 this.isSuggested = false
-            })
-        }
+            }
+            this.canMove = true
+        })
     }
 
     private tileUp(): void {
@@ -328,39 +361,34 @@ export class GameScene extends Phaser.Scene {
             const length = element.length
             this.scoreText.setText(CONST.matchScore[length])
             this.scoreText.setAlpha(1)
-            this.registry.values.score += parseInt(CONST.matchScore[length])
 
-            this.tweens.add({
+            this.add.tween({
                 targets: this,
                 alpha: 0,
                 duration: 500,
                 ease: 'sine.inout',
                 autoDestroy: true,
                 onComplete: () => {
+                    this.registry.values.score += parseInt(CONST.matchScore[length])
                     this.scoreText.setAlpha(0)
                     this.events.emit('scoreChanged')
-                    if (this.registry.values.score % 500 == 0 && this.registry.values.score > 0) {
+                    if (
+                        (this.registry.values.score % 500 == 0 && this.registry.values.score > 0) ||
+                        this.registry.get('score') > this.registry.get('level') * 500
+                    ) {
                         this.canMove = false
                         this.isRedisting = false
                         if (this.matchParticle) this.matchParticle.stop(true)
                         this.isSuggested = true
                         this.confettiParticle.explode(128)
                         this.time.delayedCall(2000, () => {
-                            this.shuffle()
+                            if (this.canMove && !this.isRedisting) this.shuffle()
                         })
                     }
                 },
             })
 
             // Emitter
-            const emitter = this.add.particles(tempArr[0].x, tempArr[0].y, 'flares', {
-                frame: { frames: ['red', 'green', 'blue'], cycle: true },
-                blendMode: 'ADD',
-                lifespan: 250,
-                scale: { start: 0.5, end: 0.1 },
-            })
-
-            const line = new Phaser.Geom.Line(0, 0, -tempArr[0].x + 520, -tempArr[0].y + 100)
 
             let [isGlow4, isGlow5] = [false, false]
             for (const ele of tempArr) if (ele.isGlowed5()) isGlow5 = true
@@ -375,21 +403,15 @@ export class GameScene extends Phaser.Scene {
                     3 * tempArr[0].height
                 )
 
-                this.explodeParticle = this.add.particles(0, 0, 'flare', {
-                    speed: 24,
-                    lifespan: 1500,
-                    quantity: 10,
-                    scale: { start: 0.3, end: 0 },
-                    emitting: false,
-                    emitZone: {
-                        type: 'edge',
-                        source: peri,
-                        quantity: 22,
-                    },
-                    duration: 300,
+                const zone = this.explodeParticle.addEmitZone({
+                    type: 'edge',
+                    source: peri,
+                    quantity: 22,
                 })
-
                 this.explodeParticle.start(0, 300)
+                this.time.delayedCall(300, () => {
+                    this.explodeParticle.removeEmitZone(zone[0])
+                })
 
                 const isVert = tempArr[0].x == tempArr[1].x
                 for (const element of tempArr) {
@@ -424,11 +446,13 @@ export class GameScene extends Phaser.Scene {
                     <Tile[][]>this.tileGrid,
                     tempArr[Math.floor(tempArr.length / 2)]
                 )
-                console.log(midTilePos)
                 if (midTilePos.x !== -1 && midTilePos.y !== -1) {
                     for (let l = midTilePos.y - 1; l >= 0; l--) {
                         if (this.tileGrid[l][midTilePos.x]) {
-                            this.tileGrid[l][midTilePos.x]?.wipe('LEFT', (midTilePos.y - 1 - l) * 10)
+                            this.tileGrid[l][midTilePos.x]?.wipe(
+                                'LEFT',
+                                (midTilePos.y - 1 - l) * 10
+                            )
                             this.tileGrid[l][midTilePos.x] = undefined
                         }
                     }
@@ -455,9 +479,16 @@ export class GameScene extends Phaser.Scene {
                 for (const ele of tempArr) ele.disableGlow()
             }
 
-            emitter.addEmitZone({ type: 'edge', source: line, quantity: 32, total: 1 })
+            const line = new Phaser.Geom.Line(0, 0, -tempArr[0].x + 520, -tempArr[0].y + 100)
+            this.match3x3Particle.setPosition(tempArr[0].x, tempArr[0].y)
+            const zone = this.match3x3Particle.addEmitZone({
+                type: 'edge',
+                source: line,
+                quantity: 32,
+                total: 1,
+            })
             this.time.delayedCall(500, () => {
-                emitter.stop()
+                this.match3x3Particle.removeEmitZone(zone[0])
             })
 
             // Removal
@@ -475,7 +506,7 @@ export class GameScene extends Phaser.Scene {
                     this.isRemoving = false
                     break
                 case 4:
-                    this.tweens.add({
+                    this.add.tween({
                         targets: [tempArr[0], tempArr[3], tempArr[1]],
                         x: tempArr[2].x,
                         y: tempArr[2].y,
@@ -500,7 +531,7 @@ export class GameScene extends Phaser.Scene {
                     })
                     break
                 case 5:
-                    this.tweens.add({
+                    this.add.tween({
                         targets: [tempArr[0], tempArr[1], tempArr[3], tempArr[4]],
                         x: tempArr[2].x,
                         y: tempArr[2].y,
@@ -626,7 +657,7 @@ export class GameScene extends Phaser.Scene {
         let time = 0
         for (let j = 0; j < this.tileGrid.length; j++) {
             for (let i = 0; i < this.tileGrid.length; i++) {
-                this.idleTweens = this.tweens.add({
+                this.idleTweens = this.add.tween({
                     targets: this.tileGrid[i][j],
                     scale: 0.5,
                     ease: 'sine.inout',
@@ -688,7 +719,6 @@ export class GameScene extends Phaser.Scene {
                                             this.tileGrid[x2][y2] as Tile
                                         )
                                         this.isSuggested = true
-                                        this.isRedisting = false
                                     }
                                     return
                                 }
@@ -703,9 +733,12 @@ export class GameScene extends Phaser.Scene {
                     }
                 }
             }
-            this.time.delayedCall(1000, () => {
-                this.shuffle()
-            })
+            if (this.canMove) {
+                this.time.delayedCall(2000, () => {
+                    this.isRedisting = false
+                    if (this.canMove && !this.isRedisting) this.shuffle()
+                })
+            }
         }
     }
 
@@ -729,31 +762,33 @@ export class GameScene extends Phaser.Scene {
                 return Math.max(tile.y, max)
             }, Number.MIN_SAFE_INTEGER) + tileGroup[0].width,
         ]
-        this.matchParticle = this.add.particles(oriX, oriY, 'flares', {
-            frame: { frames: ['red', 'green', 'blue'], cycle: true },
-            blendMode: 'ADD',
-            lifespan: 250,
-            scale: { start: 0.5, end: 0.1 },
-        })
         const rect = new Phaser.Geom.Rectangle(
             -tileGroup[0].width / 2,
             -tileGroup[0].height / 2,
             -oriX + eastX,
             -oriY + eastY
         )
-        this.matchParticle.addEmitZone({
+        const zone = this.matchParticle.setPosition(oriX, oriY).addEmitZone({
             type: 'edge',
             source: rect,
             quantity: 32,
             total: 1,
         })
+        this.matchParticle.start(1500)
+        this.time.delayedCall(1500, () => {
+            this.matchParticle.removeEmitZone(zone[0])
+        })
     }
 
     public shuffle() {
         if (!this.isRedisting) {
+            if (this.matchParticle) this.matchParticle.stop()
             this.isRedisting = true
 
-            const objects = <Phaser.GameObjects.Sprite[]>this.tileGrid.flat()
+            const objects = <Phaser.GameObjects.Sprite[]>(
+                this.tileGrid.flat().filter((x) => x != undefined)
+            )
+
             const group = this.add.group(objects)
             const RANDOM_SHAPE = CONST.shape[Phaser.Math.RND.between(0, CONST.shape.length - 1)]
 
@@ -780,7 +815,7 @@ export class GameScene extends Phaser.Scene {
                 )
                 Phaser.Actions.PlaceOnRectangle(group.getChildren(), shapeObj)
             }
-            this.tweens.add({
+            this.add.tween({
                 targets: shapeObj,
                 radius: 200,
                 ease: 'sine.inout',

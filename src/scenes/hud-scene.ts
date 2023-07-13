@@ -20,14 +20,15 @@ export class HUDScene extends Phaser.Scene {
                 frame: 'white',
                 color: [0xaec6cf, 0x96e0da, 0x937ef3],
                 colorEase: 'quart.out',
-                lifespan: 200,
-                angle: { min: -15 + 180, max: 15 + 180 },
-                scale: { start: 0.25, end: 0, ease: 'sine.in' },
-                speed: { min: 150, max: 250 },
+                lifespan: 250,
+                angle: { min: -20 + 180, max: 20 + 180 },
+                scale: { start: 0.22, end: 0, ease: 'sine.in' },
+                speed: { min: 100, max: 150 },
                 advance: 2000,
                 blendMode: 'ADD',
             })
             .setAlpha(0)
+            .setDepth(2)
 
         this.textElements = new Map([
             ['TARGET', this.addText(520, 8, `Goal: ${this.registry.get('level') * 500}`)],
@@ -47,7 +48,7 @@ export class HUDScene extends Phaser.Scene {
 
     private updateProgress() {
         this.progressBar.clear()
-        this.progressBar.fillStyle(0xfff6d3, 1)
+        this.progressBar.fillStyle(0x87ceeb, 1)
         this.progressBar.fillRect(522, 152, (180 * this.registry.get('score')) / this.target, 16)
         this.progressParticle.setAlpha(1)
         this.progressParticle.setX(522 + (180 * this.registry.get('score')) / this.target)
@@ -75,9 +76,8 @@ export class HUDScene extends Phaser.Scene {
     }
 
     private updateLevel() {
-        // Create the tweens
         this.textElements.get('LEVEL')?.setAlpha(0)
-        this.tweens.add({
+        /* this.add.tween({
             targets: this.textElements.get('TARGET'),
             x: 100,
             y: 150,
@@ -95,7 +95,14 @@ export class HUDScene extends Phaser.Scene {
                     .setText(`Level: ${this.registry.get('level')}`)
                 this.updateProgress()
             },
-        })
+        }) */
+        this.target += 500
+        this.textElements.get('TARGET')?.setText(`Goal: ${this.target}`)
+        this.textElements
+            .get('LEVEL')
+            ?.setAlpha(1)
+            .setText(`Level: ${this.registry.get('level')}`)
+        this.updateProgress()
     }
 
     private createLoadingbar(): void {
