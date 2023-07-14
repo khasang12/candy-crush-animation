@@ -1,3 +1,5 @@
+import { CONST } from "../const/const"
+
 export class HUDScene extends Phaser.Scene {
     private textElements: Map<string, Phaser.GameObjects.BitmapText>
     private loadingBar: Phaser.GameObjects.Graphics
@@ -13,7 +15,7 @@ export class HUDScene extends Phaser.Scene {
     }
 
     create(): void {
-        this.target = 500
+        this.target = CONST.milestone
         this.createLoadingbar()
         this.progressParticle = this.add
             .particles(520, 160, 'flares', {
@@ -31,7 +33,7 @@ export class HUDScene extends Phaser.Scene {
             .setDepth(2)
 
         this.textElements = new Map([
-            ['TARGET', this.addText(520, 8, `Goal: ${this.registry.get('level') * 500}`)],
+            ['TARGET', this.addText(520, 8, `Goal: ${this.registry.get('level') * CONST.milestone}`)],
             ['LEVEL', this.addText(520, 48, `Level: ${this.registry.get('level')}`)],
             ['SCORE', this.addText(520, 88, `Score: ${this.registry.get('score')}`)],
         ])
@@ -59,9 +61,9 @@ export class HUDScene extends Phaser.Scene {
         this.updateProgress()
         if (
             (!this.textLock &&
-                this.registry.get('score') % 500 == 0 &&
+                this.registry.get('score') % CONST.milestone == 0 &&
                 this.registry.get('score') > 0) ||
-            this.registry.get('score') > this.registry.get('level') * 500
+            this.registry.get('score') > this.registry.get('level') * CONST.milestone
         ) {
             this.registry.values.level += 1
             this.textLock = true
@@ -77,26 +79,7 @@ export class HUDScene extends Phaser.Scene {
 
     private updateLevel() {
         this.textElements.get('LEVEL')?.setAlpha(0)
-        /* this.add.tween({
-            targets: this.textElements.get('TARGET'),
-            x: 100,
-            y: 150,
-            scale: 3,
-            duration: 500,
-            ease: 'cubic.out',
-            delay: 500,
-            yoyo: true,
-            onComplete: () => {
-                this.target += 500
-                this.textElements.get('TARGET')?.setText(`Goal: ${this.target}`)
-                this.textElements
-                    .get('LEVEL')
-                    ?.setAlpha(1)
-                    .setText(`Level: ${this.registry.get('level')}`)
-                this.updateProgress()
-            },
-        }) */
-        this.target += 500
+        this.target += CONST.milestone
         this.textElements.get('TARGET')?.setText(`Goal: ${this.target}`)
         this.textElements
             .get('LEVEL')

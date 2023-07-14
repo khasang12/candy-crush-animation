@@ -297,7 +297,6 @@ export class GameScene extends Phaser.Scene {
             this.removeTileGroup(matches)
             this.time.delayedCall(300, () => {
                 this.resetTile()
-                this.fillTile()
                 this.tileUp()
                 this.checkMatches()
             })
@@ -311,12 +310,11 @@ export class GameScene extends Phaser.Scene {
 
     private resetTile(): void {
         // Loop through each column starting from the left
-        for (let y = this.tileGrid.length - 1; y > 0; y--) {
+        for (let x = 0; x < this.tileGrid.length; x++) {
             // Loop through each tile in column from bottom to top
-            for (let x = this.tileGrid[y].length - 1; x > 0; x--) {
+            for (let y = this.tileGrid[x].length - 1; y > 0; y--) {
                 // If this space is blank, but the one above it is not, move the one above down
                 if (this.tileGrid[y][x] === undefined && this.tileGrid[y - 1][x] !== undefined) {
-                    console.log(x, y)
                     // Move the tile above down one
                     const tempTile = this.tileGrid[y - 1][x]
                     this.tileGrid[y][x] = tempTile
@@ -326,17 +324,19 @@ export class GameScene extends Phaser.Scene {
                         targets: tempTile,
                         y: CONST.tileHeight * y + CONST.tileHeight / 2,
                         ease: 'sine.inout',
-                        duration: 180,
+                        duration: 100,
                         repeat: 0,
                         yoyo: false,
                         autoDestroy: true,
                     })
-                    x = this.tileGrid[y].length
-                    y = this.tileGrid.length
+                    x = -1
                     break
                 }
             }
         }
+        this.time.delayedCall(0, () => {
+            this.fillTile()
+        })
     }
 
     private fillTile(): void {
@@ -347,9 +347,9 @@ export class GameScene extends Phaser.Scene {
             for (let x = 0; x < this.tileGrid[y].length; x++) {
                 if (this.tileGrid[y][x] === undefined) {
                     //Found a blank spot so lets add animate a tile there
-                    const reTile = this.tilePool.shift()
+                    const reTile = this.tilePool.pop()
                     if (reTile) {
-                        const tile = this.reuseTile(reTile as Tile, x, y, 200)
+                        const tile = this.reuseTile(reTile as Tile, x, y, 100)
                         //And also update our "theoretical" grid
                         this.tileGrid[y][x] = tile
                         isFill = true
@@ -357,6 +357,7 @@ export class GameScene extends Phaser.Scene {
                 }
             }
         }
+        this.canMove = true
         this.time.delayedCall(1000, () => {
             if (this.matchParticle && isFill) {
                 this.matchParticle.stop()
@@ -391,28 +392,32 @@ export class GameScene extends Phaser.Scene {
                 duration: 500,
                 ease: 'sine.inout',
                 autoDestroy: true,
+                onStart: () => {
+                    this.canMove = false
+                },
                 onComplete: () => {
                     this.registry.values.score += parseInt(CONST.matchScore[length])
                     this.scoreText.setAlpha(0)
                     this.events.emit('scoreChanged')
                     if (
-                        (this.registry.values.score % 500 == 0 && this.registry.values.score > 0) ||
-                        this.registry.get('score') > this.registry.get('level') * 500
+                        (this.registry.values.score % CONST.milestone == 0 &&
+                            this.registry.values.score > 0) ||
+                        this.registry.get('score') > this.registry.get('level') * CONST.milestone
                     ) {
-                        this.canMove = false
                         if (this.matchParticle) this.matchParticle.stop(true)
                         this.isSuggested = true
                         this.confettiParticle.explode(128)
-                        this.time.delayedCall(1500, () => {
+                        this.tileUp()
+                        this.time.delayedCall(1200, () => {
                             console.log(407)
                             if (this.canMove && !this.isRedisting) this.shuffle()
+                            this.canMove = true
                         })
                     }
                 },
             })
 
             // Emitter
-
             let [isGlow4, isGlow5] = [false, false]
             for (const ele of tempArr) if (ele.isGlowed5()) isGlow5 = true
             if (!isGlow5) for (const ele of tempArr) if (ele.isGlowed4()) isGlow4 = true
@@ -484,31 +489,28 @@ export class GameScene extends Phaser.Scene {
                 if (midTilePos.x !== -1 && midTilePos.y !== -1) {
                     for (let l = midTilePos.y - 1; l >= 0; l--) {
                         if (this.tileGrid[l][midTilePos.x]) {
-                            this.tileGrid[l][midTilePos.x]?.wipe(
-                                'LEFT',
-                                (midTilePos.y - 1 - l) * 10
-                            )
+                            this.tileGrid[l][midTilePos.x]?.wipe('LEFT', (midTilePos.y - 1 - l) * 3)
                             this.tilePool.push(this.tileGrid[l][midTilePos.x] as Tile)
                             this.tileGrid[l][midTilePos.x] = undefined
                         }
                     }
                     for (let r = midTilePos.y + 1; r < 8; r++) {
                         if (this.tileGrid[r][midTilePos.x]) {
-                            this.tileGrid[r][midTilePos.x]?.wipe('RIGHT', (r - midTilePos.y) * 10)
+                            this.tileGrid[r][midTilePos.x]?.wipe('RIGHT', (r - midTilePos.y) * 3)
                             this.tilePool.push(this.tileGrid[r][midTilePos.x] as Tile)
                             this.tileGrid[r][midTilePos.x] = undefined
                         }
                     }
                     for (let u = midTilePos.x - 1; u >= 0; u--) {
                         if (this.tileGrid[midTilePos.y][u]) {
-                            this.tileGrid[midTilePos.y][u]?.wipe('UP', (midTilePos.x - 1 - u) * 10)
+                            this.tileGrid[midTilePos.y][u]?.wipe('UP', (midTilePos.x - 1 - u) * 3)
                             this.tilePool.push(this.tileGrid[midTilePos.y][u] as Tile)
                             this.tileGrid[midTilePos.y][u] = undefined
                         }
                     }
                     for (let d = midTilePos.x + 1; d < 8; d++) {
                         if (this.tileGrid[midTilePos.y][d]) {
-                            this.tileGrid[midTilePos.y][d]?.wipe('DOWN', (d - midTilePos.x) * 10)
+                            this.tileGrid[midTilePos.y][d]?.wipe('DOWN', (d - midTilePos.x) * 3)
                             this.tilePool.push(this.tileGrid[midTilePos.y][d] as Tile)
                             this.tileGrid[midTilePos.y][d] = undefined
                         }
@@ -533,38 +535,22 @@ export class GameScene extends Phaser.Scene {
             // Removal
             switch (tempArr.length) {
                 case 3:
-                    this.add.tween({
-                        targets: [tempArr[0], tempArr[1], tempArr[2]],
-                        x: tempArr[2].x,
-                        y: tempArr[2].y,
-                        duration: 200,
-                        autoDestroy: true,
-                        ease: 'sine.in',
-                        onComplete: () => {
-                            for (let i = 0; i < 3; i++) {
-                                const tile = tempArr[i]
-                                // Find where this tile lives in the theoretical grid
-                                const tilePos = this.getTilePos(<Tile[][]>this.tileGrid, tile)
-
-                                // Combinative Effect
-                                if (tilePos.x !== -1 && tilePos.y !== -1) {
-                                    this.tilePool.push(tile as Tile)
-                                    this.tileGrid[tilePos.y][tilePos.x]
-                                        ?.setActive(false)
-                                        .setAlpha(0)
-                                    this.tileGrid[tilePos.y][tilePos.x] = undefined
-                                }
-                            }
-                            this.isRemoving = false
-                        },
-                    })
+                    for (const tile of tempArr) {
+                        const tilePos = this.getTilePos(<Tile[][]>this.tileGrid, tile)
+                        if (tilePos.x !== -1 && tilePos.y !== -1) {
+                            this.tileGrid[tilePos.y][tilePos.x]?.setActive(false).setAlpha(0)
+                            this.tilePool.push(tile as Tile)
+                            this.tileGrid[tilePos.y][tilePos.x] = undefined
+                        }
+                    }
+                    this.isRemoving = false
                     break
                 case 4:
                     this.add.tween({
                         targets: [tempArr[0], tempArr[3], tempArr[1]],
                         x: tempArr[2].x,
                         y: tempArr[2].y,
-                        duration: 200,
+                        duration: 100,
                         autoDestroy: true,
                         ease: 'sine.in',
                         onComplete: () => {
@@ -592,7 +578,7 @@ export class GameScene extends Phaser.Scene {
                         targets: [tempArr[0], tempArr[1], tempArr[3], tempArr[4]],
                         x: tempArr[2].x,
                         y: tempArr[2].y,
-                        duration: 200,
+                        duration: 100,
                         autoDestroy: true,
                         ease: 'sine.in',
                         onComplete: () => {
@@ -737,6 +723,7 @@ export class GameScene extends Phaser.Scene {
 
     private getNextMove(): void {
         if (!this.isSuggested && this.canMove) {
+            this.resetTile()
             let traversed = false
             for (let i = 0; i < this.tileGrid.length; i++) {
                 for (let j = 0; j < this.tileGrid.length; j++) {
@@ -794,7 +781,11 @@ export class GameScene extends Phaser.Scene {
                 }
             }
             if (this.canMove && !this.isRedisting && traversed) {
-                this.shuffle()
+                this.canMove = false
+                this.tileUp()
+                this.time.delayedCall(200, () => {
+                    this.shuffle()
+                })
             }
         }
     }
@@ -839,12 +830,14 @@ export class GameScene extends Phaser.Scene {
 
     public shuffle() {
         if (this.matchParticle) this.matchParticle.stop()
-        this.canMove = false
         this.isRedisting = true
+        this.canMove = false
 
         const objects = <Phaser.GameObjects.Sprite[]>(
             this.tileGrid.flat().filter((x) => x != undefined)
         )
+
+        for (const obj of objects) obj.setPosition(510 / 2, 575 / 2)
 
         const group = this.add.group(objects)
         const RANDOM_SHAPE = CONST.shape[Phaser.Math.RND.between(0, CONST.shape.length - 1)]
@@ -915,9 +908,9 @@ export class GameScene extends Phaser.Scene {
                     }
                 }
                 this.isSuggested = true
+                this.canMove = true
                 this.time.delayedCall(2000, () => {
                     this.checkMatches()
-                    this.canMove = true
                     if (this.matchParticle) {
                         this.matchParticle.stop()
                         this.matchParticle.setAlpha(1)

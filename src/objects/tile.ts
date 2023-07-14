@@ -13,6 +13,7 @@ export class Tile extends Phaser.GameObjects.Sprite {
     private match4Tween: Phaser.Tweens.Tween | undefined
 
     constructor(aParams: IImageConstructor) {
+        console.log('create');
         super(aParams.scene, aParams.x, aParams.y, aParams.texture, aParams.frame)
 
         // set image settings
@@ -92,10 +93,10 @@ export class Tile extends Phaser.GameObjects.Sprite {
                 targets: this,
                 scale: 0.9,
                 yoyo: true,
-                ease: 'sine.inout',
+                ease: 'bounce.in',
                 autoDestroy: true,
-                repeat: 1,
-                duration: 250,
+                repeat: 0,
+                duration: 500,
                 onComplete: () => {
                     this.suggestedTween?.stop()
                     this.suggestedTween = undefined
@@ -172,8 +173,8 @@ export class Tile extends Phaser.GameObjects.Sprite {
         this.scene.tweens.add({
             targets: this.matchWipe5FX,
             progress: 1,
-            duration: 300,
-            easing: 'cubic.in',
+            duration: 100,
+            easing: 'quint.out',
             delay: delay,
             onComplete: () => {
                 this.setActive(false)

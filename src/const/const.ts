@@ -5,6 +5,7 @@ export const CONST = {
     gridHeight: 8,
     tileWidth: 64,
     tileHeight: 72,
+    milestone: 2000,
     candyTypes: [
         'cookie1',
         'cookie2',
