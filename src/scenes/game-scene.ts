@@ -80,22 +80,24 @@ export class GameScene extends Phaser.Scene {
         })
 
         // emitters
-        this.confettiParticle = this.add.particles(380, 585, 'confetti', {
+        this.confettiParticle = this.add.particles(0, 585, 'confetti', {
             frame: {
                 frames: ['blue.png', 'green.png', 'red.png'],
                 cycle: true,
             },
             lifespan: 5000,
-            speed: { min: 350, max: 1000 },
-            angle: { min: -95, max: -85 },
+            speed: { min: 350, max: 1200 },
+            angle: { min: -60, max: -45 },
             scale: { start: 0.3, end: 0 },
-            gravityY: 350,
+            gravityY: 300,
             blendMode: 'ADD',
             emitting: false,
             frequency: 60,
             quantity: 5,
             particleClass: ConfettiParticle,
         })
+
+        this.confettiParticle.explode(128)
 
         this.matchParticle = this.add.particles(0, 0, 'flares', {
             frame: { frames: ['red', 'green', 'blue'], cycle: true },
@@ -771,28 +773,28 @@ export class GameScene extends Phaser.Scene {
         if (midTilePos.x !== -1 && midTilePos.y !== -1) {
             for (let l = midTilePos.y - 1; l >= 0; l--) {
                 if (this.tileGrid[l][midTilePos.x]) {
-                    this.tileGrid[l][midTilePos.x]?.wipe('LEFT', (midTilePos.y - 1 - l) * 0.1)
+                    this.tileGrid[l][midTilePos.x]?.wipe('UP', (midTilePos.y - 1 - l) * 5)
                     this.tileManager.returnItem(this.tileGrid[l][midTilePos.x] as Tile)
                     this.tileGrid[l][midTilePos.x] = undefined
                 }
             }
             for (let r = midTilePos.y + 1; r < 8; r++) {
                 if (this.tileGrid[r][midTilePos.x]) {
-                    this.tileGrid[r][midTilePos.x]?.wipe('RIGHT', (r - midTilePos.y) * 0.1)
+                    this.tileGrid[r][midTilePos.x]?.wipe('DOWN', (r - midTilePos.y) * 5)
                     this.tileManager.returnItem(this.tileGrid[r][midTilePos.x] as Tile)
                     this.tileGrid[r][midTilePos.x] = undefined
                 }
             }
             for (let u = midTilePos.x - 1; u >= 0; u--) {
                 if (this.tileGrid[midTilePos.y][u]) {
-                    this.tileGrid[midTilePos.y][u]?.wipe('UP', (midTilePos.x - 1 - u) * 0.1)
+                    this.tileGrid[midTilePos.y][u]?.wipe('LEFT', (midTilePos.x - 1 - u) * 5)
                     this.tileManager.returnItem(this.tileGrid[midTilePos.y][u] as Tile)
                     this.tileGrid[midTilePos.y][u] = undefined
                 }
             }
             for (let d = midTilePos.x + 1; d < 8; d++) {
                 if (this.tileGrid[midTilePos.y][d]) {
-                    this.tileGrid[midTilePos.y][d]?.wipe('DOWN', (d - midTilePos.x) * 0.1)
+                    this.tileGrid[midTilePos.y][d]?.wipe('RIGHT', (d - midTilePos.x) * 5)
                     this.tileManager.returnItem(this.tileGrid[midTilePos.y][d] as Tile)
                     this.tileGrid[midTilePos.y][d] = undefined
                 }

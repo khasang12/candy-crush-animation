@@ -24,8 +24,8 @@ export class HUDScene extends Phaser.Scene {
                 colorEase: 'quart.out',
                 lifespan: 250,
                 angle: { min: -20 + 180, max: 20 + 180 },
-                scale: { start: 0.22, end: 0, ease: 'sine.in' },
-                speed: { min: 100, max: 150 },
+                scale: { start: 0.21, end: 0, ease: 'sine.in' },
+                speed: { min: 50, max: 100 },
                 advance: 2000,
                 blendMode: 'ADD',
             })

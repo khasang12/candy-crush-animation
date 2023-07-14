@@ -159,18 +159,62 @@ export class Tile extends Phaser.GameObjects.Sprite {
     }
 
     public wipe(direction: string, delay: number): void {
-        this.scene.tweens.add({
-            targets: this,
-            progress: 1,
-            alpha: 0,
-            duration: 100,
-            easing: 'quint.out',
-            delay: delay,
-            onComplete: () => {
-                this.setActive(false)
-                this.setAlpha(0)
-            },
-        })
+        if (direction == 'LEFT')
+            this.scene.tweens.add({
+                targets: this,
+                progress: 1,
+                x: this.x - 15,
+                alpha: 0,
+                duration: 100,
+                easing: 'quint.out',
+                delay: delay,
+                onComplete: () => {
+                    this.setActive(false)
+                    this.setAlpha(0)
+                },
+            })
+        else if (direction == 'RIGHT')
+            this.scene.tweens.add({
+                targets: this,
+                progress: 1,
+                x: this.x + 15,
+                alpha: 0,
+                duration: 100,
+                easing: 'quint.out',
+                delay: delay,
+                onComplete: () => {
+                    this.setActive(false)
+                    this.setAlpha(0)
+                },
+            })
+        else if (direction == 'UP')
+            this.scene.tweens.add({
+                targets: this,
+                progress: 1,
+                y: this.y - 15,
+                alpha: 0,
+                duration: 100,
+                easing: 'quint.out',
+                delay: delay,
+                onComplete: () => {
+                    this.setActive(false)
+                    this.setAlpha(0)
+                },
+            })
+        else if (direction == 'DOWN')
+            this.scene.tweens.add({
+                targets: this,
+                progress: 1,
+                y: this.y + 15,
+                alpha: 0,
+                duration: 100,
+                easing: 'quint.out',
+                delay: delay,
+                onComplete: () => {
+                    this.setActive(false)
+                    this.setAlpha(0)
+                },
+            })
     }
 }
 

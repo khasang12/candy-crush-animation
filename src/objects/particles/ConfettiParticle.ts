@@ -1,5 +1,4 @@
 export default class ConfettiParticle extends Phaser.GameObjects.Particles.Particle {
-    private windVelocity: number
     constructor(emitter: Phaser.GameObjects.Particles.ParticleEmitter) {
         super(emitter)
     }
@@ -10,6 +9,7 @@ export default class ConfettiParticle extends Phaser.GameObjects.Particles.Parti
     ) {
         const result = super.update(delta, step, processors)
         this.accelerationY = -this.velocityY
+        this.accelerationX = -2*this.velocityX
         return result
     }
 }
