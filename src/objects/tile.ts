@@ -5,7 +5,6 @@ export class Tile extends Phaser.GameObjects.Sprite {
     private isGlow5: boolean
     private matchGlow4FX: Phaser.FX.Glow
     private matchGlow5FX: Phaser.FX.Glow
-    private matchWipe5FX: Phaser.FX.Wipe
     private selectedShader: Phaser.GameObjects.Shader
     private tileGraphics: Phaser.GameObjects.Graphics
 
@@ -13,7 +12,6 @@ export class Tile extends Phaser.GameObjects.Sprite {
     private match4Tween: Phaser.Tweens.Tween | undefined
 
     constructor(aParams: IImageConstructor) {
-        console.log('create');
         super(aParams.scene, aParams.x, aParams.y, aParams.texture, aParams.frame)
 
         // set image settings
@@ -71,7 +69,7 @@ export class Tile extends Phaser.GameObjects.Sprite {
             alpha: 1,
             ease: 'Power3',
             autoDestroy: true,
-            duration: 800,
+            duration: 400,
             delay: delay,
         })
     }
@@ -161,18 +159,10 @@ export class Tile extends Phaser.GameObjects.Sprite {
     }
 
     public wipe(direction: string, delay: number): void {
-        if (direction == 'UP') {
-            this.matchWipe5FX = this.preFX?.addWipe(0.3, 1, 0) as Phaser.FX.Wipe
-        } else if (direction == 'DOWN') {
-            this.matchWipe5FX = this.preFX?.addWipe(0.3, 0, 0) as Phaser.FX.Wipe
-        } else if (direction == 'LEFT') {
-            this.matchWipe5FX = this.preFX?.addWipe(0.3, 1, 1) as Phaser.FX.Wipe
-        } else if (direction == 'RIGHT') {
-            this.matchWipe5FX = this.preFX?.addWipe(0.3, 0, 1) as Phaser.FX.Wipe
-        }
         this.scene.tweens.add({
-            targets: this.matchWipe5FX,
+            targets: this,
             progress: 1,
+            alpha: 0,
             duration: 100,
             easing: 'quint.out',
             delay: delay,
