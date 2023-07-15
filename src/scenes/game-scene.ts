@@ -86,8 +86,8 @@ export class GameScene extends Phaser.Scene {
                 cycle: true,
             },
             lifespan: 5000,
-            speed: { min: 350, max: 1200 },
-            angle: { min: -60, max: -45 },
+            speed: { min: 650, max: 1200 },
+            angle: { min: -60, max: -50 },
             scale: { start: 0.3, end: 0 },
             gravityY: 300,
             blendMode: 'ADD',
@@ -96,8 +96,6 @@ export class GameScene extends Phaser.Scene {
             quantity: 5,
             particleClass: ConfettiParticle,
         })
-
-        this.confettiParticle.explode(128)
 
         this.matchParticle = this.add.particles(0, 0, 'flares', {
             frame: { frames: ['red', 'green', 'blue'], cycle: true },
@@ -342,35 +340,23 @@ export class GameScene extends Phaser.Scene {
             // Removal
             switch (tempArr.length) {
                 case 3:
-                    this.removeMatch3(tempArr)
+                    this.tileManager.removeMatch3(tempArr, () => {
+                        this.isRemoving = false
+                    })
                     break
                 case 4:
-                    this.removeMatch4(tempArr)
+                    this.tileManager.removeMatch4(tempArr, () => {
+                        this.isRemoving = false
+                    })
                     break
                 case 5:
-                    this.removeMatch5(tempArr)
+                    this.tileManager.removeMatch5(tempArr, () => {
+                        this.isRemoving = false
+                    })
                     break
             }
         }
         callback()
-    }
-
-    private getTilePos(tileGrid: Tile[][], tile: Tile): any {
-        const pos = { x: -1, y: -1 }
-
-        //Find the position of a specific tile in the grid
-        for (let y = 0; y < tileGrid.length; y++) {
-            for (let x = 0; x < tileGrid[y].length; x++) {
-                //There is a match at this position so return the grid coords
-                if (tile === tileGrid[y][x]) {
-                    pos.x = x
-                    pos.y = y
-                    break
-                }
-            }
-        }
-
-        return pos
     }
 
     private getMatches(tileGrid: Tile[][]): Tile[][] {
@@ -585,99 +571,6 @@ export class GameScene extends Phaser.Scene {
         })
     }
 
-    public shuffle() {
-        if (this.matchParticle) this.matchParticle.stop()
-        this.isRedisting = true
-        this.canMove = false
-
-        const objects = <Phaser.GameObjects.Sprite[]>(
-            this.tileGrid.flat().filter((x) => x != undefined)
-        )
-
-        for (const obj of objects) obj.setPosition(510 / 2, 575 / 2)
-
-        const group = this.add.group(objects)
-        const RANDOM_SHAPE = CONST.shape[Phaser.Math.RND.between(0, CONST.shape.length - 1)]
-
-        let shapeObj
-        if (RANDOM_SHAPE === 'circle') {
-            shapeObj = new Phaser.Geom.Circle(300, 400, 200)
-            Phaser.Actions.PlaceOnCircle(group.getChildren(), shapeObj)
-        } else if (RANDOM_SHAPE === 'triangle') {
-            shapeObj = new Phaser.Geom.Triangle(
-                510 / 2,
-                575 / 2 - 200,
-                510 / 2 - 200 * Math.cos(Math.PI / 6),
-                575 / 2 + 200 * Math.sin(Math.PI / 6),
-                510 / 2 + 200 * Math.cos(Math.PI / 6),
-                575 / 2 + 200 * Math.sin(Math.PI / 6)
-            )
-            Phaser.Actions.PlaceOnTriangle(group.getChildren(), shapeObj)
-        } else if (RANDOM_SHAPE === 'rectangle') {
-            shapeObj = new Phaser.Geom.Rectangle(
-                510 / 2 - 200 * Math.cos(Math.PI / 4),
-                575 / 2 - 200 * Math.sin(Math.PI / 4),
-                400 * Math.cos(Math.PI / 4),
-                400 * Math.cos(Math.PI / 4)
-            )
-            Phaser.Actions.PlaceOnRectangle(group.getChildren(), shapeObj)
-        }
-        this.add.tween({
-            targets: shapeObj,
-            radius: 200,
-            ease: 'sine.inout',
-            yoyo: true,
-            duration: 1000,
-            autoDestroy: true,
-            onStart: () => {
-                if (this.matchParticle) {
-                    this.matchParticle.stop(true)
-                    this.matchParticle.setAlpha(0)
-                }
-            },
-            onUpdate: function () {
-                if (RANDOM_SHAPE === 'circle')
-                    Phaser.Actions.RotateAroundDistance(
-                        objects,
-                        { x: 510 / 2, y: 575 / 2 },
-                        0.02,
-                        200
-                    )
-                else Phaser.Actions.RotateAround(objects, { x: 510 / 2, y: 575 / 2 }, 0.02)
-            },
-            onComplete: () => {
-                this.isRedisting = false
-                clearTimeout(this.inactivityTimer)
-                let i = 200
-                for (let y = 0; y < CONST.gridHeight; y++) {
-                    for (let x = 0; x < CONST.gridWidth; x++) {
-                        const randomTileType: string =
-                            CONST.candyTypes[
-                                Phaser.Math.RND.between(0, CONST.candyTypes.length - 1)
-                            ]
-                        this.tileGrid[y][x]?.setTexture(randomTileType)
-                        this.tileGrid[y][x]?.revealImageWithDelay(
-                            x * CONST.tileWidth + CONST.tileWidth / 2,
-                            y * CONST.tileHeight + CONST.tileHeight / 2,
-                            i
-                        )
-                        i += 10
-                    }
-                }
-                this.isSuggested = true
-                this.canMove = true
-                this.time.delayedCall(2000, () => {
-                    this.checkMatches()
-                    if (this.matchParticle) {
-                        this.matchParticle.stop()
-                        this.matchParticle.setAlpha(1)
-                        this.isSuggested = false
-                    }
-                })
-            },
-        })
-    }
-
     private emitScoreText(tempArr: Tile[]) {
         this.scoreText.setPosition(tempArr[1].x - 20, tempArr[1].y - 5)
         const length = tempArr.length
@@ -734,73 +627,11 @@ export class GameScene extends Phaser.Scene {
             this.explodeParticle.removeEmitZone(zone[0])
         })
 
-        const isVert = tempArr[0].x == tempArr[1].x
-        for (const element of tempArr) {
-            const tile = element
-            //Find where this tile lives in the theoretical grid
-            const tilePos = this.getTilePos(<Tile[][]>this.tileGrid, tile)
-            if (tilePos.x !== -1 && tilePos.y !== -1) {
-                if (!isVert) {
-                    if (tilePos.y > 0 && this.tileGrid[tilePos.y - 1][tilePos.x]) {
-                        this.tileManager.returnItem(this.tileGrid[tilePos.y - 1][tilePos.x] as Tile)
-                        this.tileGrid[tilePos.y - 1][tilePos.x]?.setActive(false).setAlpha(0)
-                        this.tileGrid[tilePos.y - 1][tilePos.x] = undefined
-                    }
-                    if (tilePos.y < 7 && this.tileGrid[tilePos.y + 1][tilePos.x]) {
-                        this.tileManager.returnItem(this.tileGrid[tilePos.y + 1][tilePos.x] as Tile)
-                        this.tileGrid[tilePos.y + 1][tilePos.x]?.setActive(false).setAlpha(0)
-                        this.tileGrid[tilePos.y + 1][tilePos.x] = undefined
-                    }
-                } else {
-                    if (tilePos.x > 0 && this.tileGrid[tilePos.y][tilePos.x - 1]) {
-                        this.tileManager.returnItem(this.tileGrid[tilePos.y][tilePos.x - 1] as Tile)
-                        this.tileGrid[tilePos.y][tilePos.x - 1]?.setActive(false).setAlpha(0)
-                        this.tileGrid[tilePos.y][tilePos.x - 1] = undefined
-                    }
-                    if (tilePos.x < 7 && this.tileGrid[tilePos.y][tilePos.x + 1]) {
-                        this.tileManager.returnItem(this.tileGrid[tilePos.y][tilePos.x + 1] as Tile)
-                        this.tileGrid[tilePos.y][tilePos.x + 1]?.setActive(false).setAlpha(0)
-                        this.tileGrid[tilePos.y][tilePos.x + 1] = undefined
-                    }
-                }
-            }
-        }
-        for (const ele of tempArr) ele.disableGlow()
+        this.tileManager.emitGlow4(tempArr)
     }
 
     private emitGlow5(glow5: Tile, tempArr: Tile[]) {
-        const midTilePos = this.getTilePos(<Tile[][]>this.tileGrid, glow5)
-        if (midTilePos.x !== -1 && midTilePos.y !== -1) {
-            for (let l = midTilePos.y - 1; l >= 0; l--) {
-                if (this.tileGrid[l][midTilePos.x]) {
-                    this.tileGrid[l][midTilePos.x]?.wipe('UP', (midTilePos.y - 1 - l) * 5)
-                    this.tileManager.returnItem(this.tileGrid[l][midTilePos.x] as Tile)
-                    this.tileGrid[l][midTilePos.x] = undefined
-                }
-            }
-            for (let r = midTilePos.y + 1; r < 8; r++) {
-                if (this.tileGrid[r][midTilePos.x]) {
-                    this.tileGrid[r][midTilePos.x]?.wipe('DOWN', (r - midTilePos.y) * 5)
-                    this.tileManager.returnItem(this.tileGrid[r][midTilePos.x] as Tile)
-                    this.tileGrid[r][midTilePos.x] = undefined
-                }
-            }
-            for (let u = midTilePos.x - 1; u >= 0; u--) {
-                if (this.tileGrid[midTilePos.y][u]) {
-                    this.tileGrid[midTilePos.y][u]?.wipe('LEFT', (midTilePos.x - 1 - u) * 5)
-                    this.tileManager.returnItem(this.tileGrid[midTilePos.y][u] as Tile)
-                    this.tileGrid[midTilePos.y][u] = undefined
-                }
-            }
-            for (let d = midTilePos.x + 1; d < 8; d++) {
-                if (this.tileGrid[midTilePos.y][d]) {
-                    this.tileGrid[midTilePos.y][d]?.wipe('RIGHT', (d - midTilePos.x) * 5)
-                    this.tileManager.returnItem(this.tileGrid[midTilePos.y][d] as Tile)
-                    this.tileGrid[midTilePos.y][d] = undefined
-                }
-            }
-        }
-        for (const ele of tempArr) ele.disableGlow()
+        this.tileManager.emitGlow5(glow5, tempArr)
     }
 
     private emitLineToScoreboard(tempArr: Tile[]) {
@@ -818,68 +649,83 @@ export class GameScene extends Phaser.Scene {
         })
     }
 
-    private removeMatch3(tempArr: Tile[]) {
-        for (const tile of tempArr) {
-            const tilePos = this.getTilePos(<Tile[][]>this.tileGrid, tile)
-            if (tilePos.x !== -1 && tilePos.y !== -1) {
-                this.tileGrid[tilePos.y][tilePos.x]?.setActive(false).setAlpha(0)
-                this.tileManager.returnItem(tile as Tile)
-                this.tileGrid[tilePos.y][tilePos.x] = undefined
-            }
+    public shuffle() {
+        if (this.matchParticle) this.matchParticle.stop()
+        this.isRedisting = true
+        this.canMove = false
+
+        const objects = <Phaser.GameObjects.Sprite[]>(
+            this.tileGrid.flat().filter((x) => x != undefined)
+        )
+
+        for (const obj of objects) obj.setPosition(510 / 2, 575 / 2)
+
+        const group = this.add.group(objects)
+        const RANDOM_SHAPE = CONST.shape[Phaser.Math.RND.between(0, CONST.shape.length - 1)]
+
+        let shapeObj
+        if (RANDOM_SHAPE === 'circle') {
+            shapeObj = new Phaser.Geom.Circle(...CONST.circle)
+            Phaser.Actions.PlaceOnCircle(group.getChildren(), shapeObj)
+        } else if (RANDOM_SHAPE === 'triangle') {
+            shapeObj = new Phaser.Geom.Triangle(...CONST.triangle)
+            Phaser.Actions.PlaceOnTriangle(group.getChildren(), shapeObj)
+        } else if (RANDOM_SHAPE === 'rectangle') {
+            shapeObj = new Phaser.Geom.Rectangle(...CONST.rectangle)
+            Phaser.Actions.PlaceOnRectangle(group.getChildren(), shapeObj)
         }
-        this.isRemoving = false
-    }
-
-    private removeMatch4(tempArr: Tile[]) {
         this.add.tween({
-            targets: [tempArr[0], tempArr[3], tempArr[1]],
-            x: tempArr[2].x,
-            y: tempArr[2].y,
-            duration: 100,
+            targets: shapeObj,
+            radius: 200,
+            ease: 'sine.inout',
+            yoyo: true,
+            duration: 1000,
             autoDestroy: true,
-            ease: 'sine.in',
-            onComplete: () => {
-                for (let i = 0; i < 4; i++) {
-                    const tile = tempArr[i]
-                    // Find where this tile lives in the theoretical grid
-                    const tilePos = this.getTilePos(<Tile[][]>this.tileGrid, tile)
-                    if (i == 2) continue
-                    // Combinative Effect
-                    if (tilePos.x !== -1 && tilePos.y !== -1) {
-                        this.tileManager.returnItem(tile as Tile)
-                        this.tileGrid[tilePos.y][tilePos.x]?.setActive(false).setAlpha(0)
-                        this.tileGrid[tilePos.y][tilePos.x] = undefined
-                    }
+            onStart: () => {
+                if (this.matchParticle) {
+                    this.matchParticle.stop(true)
+                    this.matchParticle.setAlpha(0)
                 }
-                this.isRemoving = false
-                tempArr[2].enableGlow4()
             },
-        })
-    }
-
-    private removeMatch5(tempArr: Tile[]) {
-        this.add.tween({
-            targets: [tempArr[0], tempArr[1], tempArr[3], tempArr[4]],
-            x: tempArr[2].x,
-            y: tempArr[2].y,
-            duration: 100,
-            autoDestroy: true,
-            ease: 'sine.in',
+            onUpdate: function () {
+                if (RANDOM_SHAPE === 'circle')
+                    Phaser.Actions.RotateAroundDistance(
+                        objects,
+                        { x: 510 / 2, y: 575 / 2 },
+                        0.02,
+                        200
+                    )
+                else Phaser.Actions.RotateAround(objects, { x: 510 / 2, y: 575 / 2 }, 0.02)
+            },
             onComplete: () => {
-                for (let i = 0; i < 5; i++) {
-                    const tile = tempArr[i]
-                    // Find where this tile lives in the theoretical grid
-                    const tilePos = this.getTilePos(<Tile[][]>this.tileGrid, tile)
-                    if (i == 2) continue
-                    // Combinative Effect
-                    if (tilePos.x !== -1 && tilePos.y !== -1) {
-                        this.tileManager.returnItem(tile as Tile)
-                        this.tileGrid[tilePos.y][tilePos.x]?.setActive(false).setAlpha(0)
-                        this.tileGrid[tilePos.y][tilePos.x] = undefined
+                this.isRedisting = false
+                clearTimeout(this.inactivityTimer)
+                let i = 200
+                for (let y = 0; y < CONST.gridHeight; y++) {
+                    for (let x = 0; x < CONST.gridWidth; x++) {
+                        const randomTileType: string =
+                            CONST.candyTypes[
+                                Phaser.Math.RND.between(0, CONST.candyTypes.length - 1)
+                            ]
+                        this.tileGrid[y][x]?.setTexture(randomTileType)
+                        this.tileGrid[y][x]?.revealImageWithDelay(
+                            x * CONST.tileWidth + CONST.tileWidth / 2,
+                            y * CONST.tileHeight + CONST.tileHeight / 2,
+                            i
+                        )
+                        i += 10
                     }
                 }
-                this.isRemoving = false
-                tempArr[2].enableGlow5()
+                this.isSuggested = true
+                this.canMove = true
+                this.time.delayedCall(2000, () => {
+                    this.checkMatches()
+                    if (this.matchParticle) {
+                        this.matchParticle.stop()
+                        this.matchParticle.setAlpha(1)
+                        this.isSuggested = false
+                    }
+                })
             },
         })
     }
