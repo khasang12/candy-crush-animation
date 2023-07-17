@@ -6,7 +6,6 @@ export class Tile extends Phaser.GameObjects.Sprite {
     private matchGlow4FX: Phaser.FX.Glow
     private matchGlow5FX: Phaser.FX.Glow
     private selectedShader: Phaser.GameObjects.Shader
-    private tileGraphics: Phaser.GameObjects.Graphics
 
     private suggestedTween: Phaser.Tweens.Tween | undefined
     private match4Tween: Phaser.Tweens.Tween | undefined
@@ -41,24 +40,13 @@ export class Tile extends Phaser.GameObjects.Sprite {
             .setDepth(-1)
             .setVisible(false)
 
-        // Tile Border
-        this.tileGraphics = this.scene.add.graphics().setDepth(-1).setVisible(true)
-        const borderWidth = 2
-        this.tileGraphics.lineStyle(borderWidth, 0xffffff, 1)
-        this.tileGraphics.strokeRoundedRect(
-            this.x - this.width / 2 - borderWidth / 2 + 4,
-            this.y - this.height / 2 - borderWidth / 2 + 4,
-            this.width + borderWidth - 8,
-            this.height + borderWidth - 8,
-            12
-        )
 
         // Tile Glowed
-        this.preFX?.setPadding(32)
+        /* this.preFX?.setPadding(32)
         this.matchGlow4FX = this.preFX?.addGlow() as Phaser.FX.Glow
         this.matchGlow4FX.setActive(false)
         this.matchGlow5FX = this.preFX?.addGlow(0xffff00, 4, 0, false, 0.1, 32) as Phaser.FX.Glow
-        this.matchGlow5FX.setActive(false)
+        this.matchGlow5FX.setActive(false) */
     }
 
     public revealImageWithDelay(x: number, y: number, delay: number): void {
@@ -78,7 +66,6 @@ export class Tile extends Phaser.GameObjects.Sprite {
         this.selectedShader.setX(this.x - 5)
         this.selectedShader.setY(this.y)
         this.selectedShader.setVisible(true)
-        this.tileGraphics.setVisible(true)
     }
 
     public getDeselected(): void {
@@ -106,31 +93,31 @@ export class Tile extends Phaser.GameObjects.Sprite {
 
     public enableGlow4(): void {
         this.isGlow4 = true
-        this.matchGlow4FX.setActive(true)
+        /* this.matchGlow4FX.setActive(true)
         this.match4Tween = this.scene?.tweens.add({
             targets: this.matchGlow4FX,
             outerStrength: 15,
             yoyo: true,
             loop: -1,
             ease: 'sine.inout',
-        })
+        }) */
     }
 
     public enableGlow5(): void {
         this.isGlow5 = true
-        this.matchGlow5FX.setActive(true)
+        /* this.matchGlow5FX.setActive(true)
         this.match4Tween = this.scene?.tweens.add({
             targets: this.matchGlow5FX,
             outerStrength: 25,
             yoyo: true,
             loop: -1,
             ease: 'sine.inout',
-        })
+        }) */
     }
 
     public disableGlow(): void {
-        this.matchGlow4FX.setActive(false)
-        this.matchGlow5FX.setActive(false)
+        /* this.matchGlow4FX.setActive(false)
+        this.matchGlow5FX.setActive(false) */
         this.match4Tween?.destroy()
         this.match4Tween = undefined
         this.isGlow4 = false

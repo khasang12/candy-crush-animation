@@ -166,7 +166,6 @@ export default class TileManager {
         for (const tile of tempArr) {
             const tilePos = this.getTilePos(<Tile[][]>this.tileGrid, tile)
             if (tilePos.x !== -1 && tilePos.y !== -1) {
-                this.tileGrid[tilePos.y][tilePos.x]?.setActive(false).setAlpha(0)
                 this.returnItem(tile as Tile)
                 this.tileGrid[tilePos.y][tilePos.x] = undefined
             }
@@ -191,7 +190,6 @@ export default class TileManager {
                     // Combinative Effect
                     if (tilePos.x !== -1 && tilePos.y !== -1) {
                         this.returnItem(tile as Tile)
-                        this.tileGrid[tilePos.y][tilePos.x]?.setActive(false).setAlpha(0)
                         this.tileGrid[tilePos.y][tilePos.x] = undefined
                     }
                 }
@@ -218,7 +216,6 @@ export default class TileManager {
                     // Combinative Effect
                     if (tilePos.x !== -1 && tilePos.y !== -1) {
                         this.returnItem(tile as Tile)
-                        this.tileGrid[tilePos.y][tilePos.x]?.setActive(false).setAlpha(0)
                         this.tileGrid[tilePos.y][tilePos.x] = undefined
                     }
                 }

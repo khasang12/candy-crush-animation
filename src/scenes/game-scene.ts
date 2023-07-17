@@ -572,6 +572,7 @@ export class GameScene extends Phaser.Scene {
     }
 
     private emitScoreText(tempArr: Tile[]) {
+        console.log('score')
         this.scoreText.setPosition(tempArr[1].x - 20, tempArr[1].y - 5)
         const length = tempArr.length
         this.scoreText.setText(CONST.matchScore[length])
@@ -650,83 +651,86 @@ export class GameScene extends Phaser.Scene {
     }
 
     public shuffle() {
-        if (this.matchParticle) this.matchParticle.stop()
-        this.isRedisting = true
-        this.canMove = false
+        if (!this.isRedisting) {
+            console.log('shuffle')
+            if (this.matchParticle) this.matchParticle.stop()
+            this.isRedisting = true
+            this.canMove = false
 
-        const objects = <Phaser.GameObjects.Sprite[]>(
-            this.tileGrid.flat().filter((x) => x != undefined)
-        )
+            const objects = <Phaser.GameObjects.Sprite[]>(
+                this.tileGrid.flat().filter((x) => x != undefined)
+            )
 
-        for (const obj of objects) obj.setPosition(510 / 2, 575 / 2)
+            for (const obj of objects) obj.setPosition(510 / 2, 575 / 2)
 
-        const group = this.add.group(objects)
-        const RANDOM_SHAPE = CONST.shape[Phaser.Math.RND.between(0, CONST.shape.length - 1)]
+            const group = this.add.group(objects)
+            const RANDOM_SHAPE = CONST.shape[Phaser.Math.RND.between(0, CONST.shape.length - 1)]
 
-        let shapeObj
-        if (RANDOM_SHAPE === 'circle') {
-            shapeObj = new Phaser.Geom.Circle(...CONST.circle)
-            Phaser.Actions.PlaceOnCircle(group.getChildren(), shapeObj)
-        } else if (RANDOM_SHAPE === 'triangle') {
-            shapeObj = new Phaser.Geom.Triangle(...CONST.triangle)
-            Phaser.Actions.PlaceOnTriangle(group.getChildren(), shapeObj)
-        } else if (RANDOM_SHAPE === 'rectangle') {
-            shapeObj = new Phaser.Geom.Rectangle(...CONST.rectangle)
-            Phaser.Actions.PlaceOnRectangle(group.getChildren(), shapeObj)
-        }
-        this.add.tween({
-            targets: shapeObj,
-            radius: 200,
-            ease: 'sine.inout',
-            yoyo: true,
-            duration: 1000,
-            autoDestroy: true,
-            onStart: () => {
-                if (this.matchParticle) {
-                    this.matchParticle.stop(true)
-                    this.matchParticle.setAlpha(0)
-                }
-            },
-            onUpdate: function () {
-                if (RANDOM_SHAPE === 'circle')
-                    Phaser.Actions.RotateAroundDistance(
-                        objects,
-                        { x: 510 / 2, y: 575 / 2 },
-                        0.02,
-                        200
-                    )
-                else Phaser.Actions.RotateAround(objects, { x: 510 / 2, y: 575 / 2 }, 0.02)
-            },
-            onComplete: () => {
-                this.isRedisting = false
-                clearTimeout(this.inactivityTimer)
-                let i = 200
-                for (let y = 0; y < CONST.gridHeight; y++) {
-                    for (let x = 0; x < CONST.gridWidth; x++) {
-                        const randomTileType: string =
-                            CONST.candyTypes[
-                                Phaser.Math.RND.between(0, CONST.candyTypes.length - 1)
-                            ]
-                        this.tileGrid[y][x]?.setTexture(randomTileType)
-                        this.tileGrid[y][x]?.revealImageWithDelay(
-                            x * CONST.tileWidth + CONST.tileWidth / 2,
-                            y * CONST.tileHeight + CONST.tileHeight / 2,
-                            i
-                        )
-                        i += 10
-                    }
-                }
-                this.isSuggested = true
-                this.canMove = true
-                this.time.delayedCall(2000, () => {
-                    this.checkMatches()
+            let shapeObj
+            if (RANDOM_SHAPE === 'circle') {
+                shapeObj = new Phaser.Geom.Circle(...CONST.circle)
+                Phaser.Actions.PlaceOnCircle(group.getChildren(), shapeObj)
+            } else if (RANDOM_SHAPE === 'triangle') {
+                shapeObj = new Phaser.Geom.Triangle(...CONST.triangle)
+                Phaser.Actions.PlaceOnTriangle(group.getChildren(), shapeObj)
+            } else if (RANDOM_SHAPE === 'rectangle') {
+                shapeObj = new Phaser.Geom.Rectangle(...CONST.rectangle)
+                Phaser.Actions.PlaceOnRectangle(group.getChildren(), shapeObj)
+            }
+            this.add.tween({
+                targets: shapeObj,
+                radius: 200,
+                ease: 'sine.inout',
+                yoyo: true,
+                duration: 1000,
+                autoDestroy: true,
+                onStart: () => {
                     if (this.matchParticle) {
-                        this.matchParticle.stop()
-                        this.matchParticle.setAlpha(1)
-                        this.isSuggested = false
+                        this.matchParticle.stop(true)
+                        this.matchParticle.setAlpha(0)
                     }
-                })
-            },
-        })
+                },
+                onUpdate: function () {
+                    if (RANDOM_SHAPE === 'circle')
+                        Phaser.Actions.RotateAroundDistance(
+                            objects,
+                            { x: 510 / 2, y: 575 / 2 },
+                            0.02,
+                            200
+                        )
+                    else Phaser.Actions.RotateAround(objects, { x: 510 / 2, y: 575 / 2 }, 0.02)
+                },
+                onComplete: () => {
+                    this.isRedisting = false
+                    clearTimeout(this.inactivityTimer)
+                    let i = 200
+                    for (let y = 0; y < CONST.gridHeight; y++) {
+                        for (let x = 0; x < CONST.gridWidth; x++) {
+                            const randomTileType: string =
+                                CONST.candyTypes[
+                                    Phaser.Math.RND.between(0, CONST.candyTypes.length - 1)
+                                ]
+                            this.tileGrid[y][x]?.setTexture(randomTileType)
+                            this.tileGrid[y][x]?.revealImageWithDelay(
+                                x * CONST.tileWidth + CONST.tileWidth / 2,
+                                y * CONST.tileHeight + CONST.tileHeight / 2,
+                                i
+                            )
+                            i += 10
+                        }
+                    }
+                    this.isSuggested = true
+                    this.canMove = true
+                    this.time.delayedCall(2000, () => {
+                        this.checkMatches()
+                        if (this.matchParticle) {
+                            this.matchParticle.stop()
+                            this.matchParticle.setAlpha(1)
+                            this.isSuggested = false
+                        }
+                    })
+                },
+            })
+        }
     }
 }
