@@ -33,44 +33,6 @@ export class Tile extends Phaser.GameObjects.Sprite {
             })
         }
         this.scene.add.existing(this)
-
-        // Tile Selected
-        const basesShader2 = new Phaser.Display.BaseShader('BufferShader2', fragmentShader3)
-        this.selectedShader = this.scene.add
-            .shader(basesShader2, this.x - 5, this.y, this.width * 1.2, this.height * 1.2)
-            .setDepth(-1)
-            .setVisible(false)
-
-        // Tile Glowed
-        this.matchGlow4 = this.scene.add
-            .particles(this.x, this.y, 'flares', {
-                frame: 'white',
-                color: [0xfacc22, 0xf89800, 0xf83600, 0x9f0404],
-                colorEase: 'quad.out',
-                lifespan: 500,
-                angle: { min: -0, max: -360 },
-                scale: { start: 0.5, end: 0, ease: 'sine.out' },
-                speed: 100,
-                blendMode: 'ADD',
-                emitting: false,
-            })
-            .setDepth(-1)
-            .startFollow(this, -this.x, -this.y)
-
-        this.matchGlow5 = this.scene.add
-            .particles(this.x, this.y, 'flares', {
-                frame: 'white',
-                color: [0x96e0da, 0x937ef3],
-                colorEase: 'quart.out',
-                lifespan: 500,
-                angle: [0 + 45, 90 + 45, 180 + 45, 270 + 45],
-                scale: { start: 0.5, end: 0, ease: 'sine.in' },
-                speed: 100,
-                blendMode: 'ADD',
-                emitting: false,
-            })
-            .setDepth(-1)
-            .startFollow(this, -this.x, -this.y)
     }
 
     public revealImageWithDelay(x: number, y: number, delay: number): void {
@@ -87,22 +49,37 @@ export class Tile extends Phaser.GameObjects.Sprite {
     }
 
     public getSelected(): void {
+        // Tile Selected
+        if (!this.selectedShader) {
+            const basesShader2 = new Phaser.Display.BaseShader('BufferShader2', fragmentShader3)
+            this.selectedShader = this.scene.add
+                .shader(basesShader2, this.x - 5, this.y, this.width * 1.2, this.height * 1.2)
+                .setDepth(-1)
+                .setActive(false)
+                .setVisible(false)
+        }
+
         this.selectedShader.setX(this.x - 5)
         this.selectedShader.setY(this.y)
-        this.selectedShader.setVisible(true)
+        this.selectedShader.setActive(true).setVisible(true)
     }
 
     public getDeselected(): void {
-        this.selectedShader.setVisible(false)
+        this.selectedShader.setActive(false).setVisible(false)
     }
 
-    public getAttracted(): void {
+    public getAttracted(direction: string): void {
+        let data
+        if (direction == 'LEFT') data = { x: this.x - 10 }
+        else if (direction == 'RIGHT') data = { x: this.x + 10 }
+        else if (direction == 'UP') data = { y: this.y - 10 }
+        else if (direction == 'DOWN') data = { y: this.y + 10 }
+
         if (!this.suggestedTween) {
             this.suggestedTween = this.scene.tweens.add({
                 targets: this,
-                scale: 0.9,
                 yoyo: true,
-                ease: 'bounce.in',
+                ease: 'sine.in',
                 autoDestroy: true,
                 repeat: 0,
                 duration: 500,
@@ -111,23 +88,58 @@ export class Tile extends Phaser.GameObjects.Sprite {
                     this.suggestedTween = undefined
                     this.setAlpha(1)
                 },
+                scale: 0.9,
             })
         }
     }
 
     public enableGlow4(): void {
+        if (!this.matchGlow4)
+            this.matchGlow4 = this.scene.add
+                .particles(this.x, this.y, 'flares', {
+                    frame: 'white',
+                    color: [0xfacc22, 0xf89800, 0xf83600, 0x9f0404],
+                    colorEase: 'quad.out',
+                    lifespan: 500,
+                    angle: { min: -0, max: -360 },
+                    scale: { start: 0.5, end: 0, ease: 'sine.out' },
+                    speed: 100,
+                    blendMode: 'ADD',
+                    emitting: false,
+                })
+                .setActive(false)
+                .setDepth(-1)
+                .startFollow(this, -this.x, -this.y)
         this.isGlow4 = true
+        this.matchGlow4.setActive(true)
         this.scene.time.delayedCall(300, () => this.matchGlow4.start())
     }
 
     public enableGlow5(): void {
+        if (!this.matchGlow5)
+            this.matchGlow5 = this.scene.add
+                .particles(this.x, this.y, 'flares', {
+                    frame: 'white',
+                    color: [0x96e0da, 0x937ef3],
+                    colorEase: 'quart.out',
+                    lifespan: 500,
+                    angle: [0 + 45, 90 + 45, 180 + 45, 270 + 45],
+                    scale: { start: 0.5, end: 0, ease: 'sine.in' },
+                    speed: 100,
+                    blendMode: 'ADD',
+                    emitting: false,
+                })
+                .setActive(false)
+                .setDepth(-1)
+                .startFollow(this, -this.x, -this.y)
         this.isGlow5 = true
+        this.matchGlow5.setActive(true)
         this.scene.time.delayedCall(300, () => this.matchGlow5.start())
     }
 
     public disableGlow(): void {
-        this.matchGlow4.stop()
-        this.matchGlow5.stop()
+        if (this.matchGlow4) this.matchGlow4.stop()
+        if (this.matchGlow5) this.matchGlow5.stop()
         this.match4Tween?.destroy()
         this.match4Tween = undefined
         this.isGlow4 = false

@@ -76,8 +76,9 @@ export class GameScene extends Phaser.Scene {
     }
 
     init(): void {
-        this.addStats()
-        this.countDrawCalls()
+        /* this.addStats()
+        this.countDrawCalls() */
+        console.log(this.children);
 
         // Variables
         this.tileManager = new TileManager(this)
@@ -113,7 +114,7 @@ export class GameScene extends Phaser.Scene {
             clearTimeout(this.inactivityTimer)
             if (this.idleTweens) this.idleTweens.stop()
 
-            this.inactivityTimer = setTimeout(() => this.getNextMove(() => this.shuffle()), 3000)
+            this.inactivityTimer = setTimeout(() => this.getNextMove(() => this.shuffle()), 1000)
             this.inactivityTimer = setTimeout(() => this.idle(), 5000)
         })
 
@@ -543,7 +544,8 @@ export class GameScene extends Phaser.Scene {
                                             this.emitSuggestion(
                                                 matches[0],
                                                 this.tileGrid[i][j] as Tile,
-                                                this.tileGrid[x2][y2] as Tile
+                                                this.tileGrid[x2][y2] as Tile,
+                                                () => (this.canMove = true)
                                             )
                                             this.isSuggested = true
                                         }
@@ -578,10 +580,18 @@ export class GameScene extends Phaser.Scene {
         }
     }
 
-    public emitSuggestion(tileGroup: Tile[], tile1: Tile, tile2: Tile) {
-        tile1.getAttracted()
-        tile2.getAttracted()
+    public emitSuggestion(tileGroup: Tile[], tile1: Tile, tile2: Tile, callback: () => void) {
+        this.canMove = false
+        if (tile1.y == tile2.y) {
+            tile1.getAttracted('RIGHT')
+            tile2.getAttracted('LEFT')
+        } else {
+            tile1.getAttracted('DOWN')
+            tile2.getAttracted('UP')
+        }
+        callback()
 
+        /* 
         const [oriX, oriY] = [
             tileGroup.reduce((min, tile) => {
                 return Math.min(tile.x, min)
@@ -613,7 +623,7 @@ export class GameScene extends Phaser.Scene {
         this.matchParticle.start(1500)
         this.time.delayedCall(1500, () => {
             this.matchParticle.removeEmitZone(zone[0])
-        })
+        }) */
     }
 
     private emitScoreText(tempArr: Tile[]) {
