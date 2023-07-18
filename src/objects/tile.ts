@@ -3,12 +3,13 @@ import { IImageConstructor } from '../interfaces/image.interface'
 export class Tile extends Phaser.GameObjects.Sprite {
     private isGlow4: boolean
     private isGlow5: boolean
-    private matchGlow4FX: Phaser.FX.Glow
-    private matchGlow5FX: Phaser.FX.Glow
+    private matchGlow4: Phaser.GameObjects.Particles.ParticleEmitter
+    private matchGlow5: Phaser.GameObjects.Particles.ParticleEmitter
     private selectedShader: Phaser.GameObjects.Shader
 
     private suggestedTween: Phaser.Tweens.Tween | undefined
     private match4Tween: Phaser.Tweens.Tween | undefined
+    private match5Tween: Phaser.Tweens.Tween | undefined
 
     constructor(aParams: IImageConstructor) {
         super(aParams.scene, aParams.x, aParams.y, aParams.texture, aParams.frame)
@@ -34,19 +35,42 @@ export class Tile extends Phaser.GameObjects.Sprite {
         this.scene.add.existing(this)
 
         // Tile Selected
-        const basesShader2 = new Phaser.Display.BaseShader('BufferShader2', glowShader)
+        const basesShader2 = new Phaser.Display.BaseShader('BufferShader2', fragmentShader3)
         this.selectedShader = this.scene.add
             .shader(basesShader2, this.x - 5, this.y, this.width * 1.2, this.height * 1.2)
             .setDepth(-1)
             .setVisible(false)
 
-
         // Tile Glowed
-        /* this.preFX?.setPadding(32)
-        this.matchGlow4FX = this.preFX?.addGlow() as Phaser.FX.Glow
-        this.matchGlow4FX.setActive(false)
-        this.matchGlow5FX = this.preFX?.addGlow(0xffff00, 4, 0, false, 0.1, 32) as Phaser.FX.Glow
-        this.matchGlow5FX.setActive(false) */
+        this.matchGlow4 = this.scene.add
+            .particles(this.x, this.y, 'flares', {
+                frame: 'white',
+                color: [0xfacc22, 0xf89800, 0xf83600, 0x9f0404],
+                colorEase: 'quad.out',
+                lifespan: 500,
+                angle: { min: -0, max: -360 },
+                scale: { start: 0.5, end: 0, ease: 'sine.out' },
+                speed: 100,
+                blendMode: 'ADD',
+                emitting: false,
+            })
+            .setDepth(-1)
+            .startFollow(this, -this.x, -this.y)
+
+        this.matchGlow5 = this.scene.add
+            .particles(this.x, this.y, 'flares', {
+                frame: 'white',
+                color: [0x96e0da, 0x937ef3],
+                colorEase: 'quart.out',
+                lifespan: 500,
+                angle: [0 + 45, 90 + 45, 180 + 45, 270 + 45],
+                scale: { start: 0.5, end: 0, ease: 'sine.in' },
+                speed: 100,
+                blendMode: 'ADD',
+                emitting: false,
+            })
+            .setDepth(-1)
+            .startFollow(this, -this.x, -this.y)
     }
 
     public revealImageWithDelay(x: number, y: number, delay: number): void {
@@ -93,31 +117,17 @@ export class Tile extends Phaser.GameObjects.Sprite {
 
     public enableGlow4(): void {
         this.isGlow4 = true
-        /* this.matchGlow4FX.setActive(true)
-        this.match4Tween = this.scene?.tweens.add({
-            targets: this.matchGlow4FX,
-            outerStrength: 15,
-            yoyo: true,
-            loop: -1,
-            ease: 'sine.inout',
-        }) */
+        this.scene.time.delayedCall(300, () => this.matchGlow4.start())
     }
 
     public enableGlow5(): void {
         this.isGlow5 = true
-        /* this.matchGlow5FX.setActive(true)
-        this.match4Tween = this.scene?.tweens.add({
-            targets: this.matchGlow5FX,
-            outerStrength: 25,
-            yoyo: true,
-            loop: -1,
-            ease: 'sine.inout',
-        }) */
+        this.scene.time.delayedCall(300, () => this.matchGlow5.start())
     }
 
     public disableGlow(): void {
-        /* this.matchGlow4FX.setActive(false)
-        this.matchGlow5FX.setActive(false) */
+        this.matchGlow4.stop()
+        this.matchGlow5.stop()
         this.match4Tween?.destroy()
         this.match4Tween = undefined
         this.isGlow4 = false

@@ -8,7 +8,7 @@ export const GameConfig: Phaser.Types.Core.GameConfig = {
     version: '2.0',
     width: 715,
     height: 575,
-    type: Phaser.AUTO,
+    type: Phaser.WEBGL,
     parent: 'game',
     scene: [BootScene, GameScene, HUDScene],
     scale: {
