@@ -1,9 +1,9 @@
-import { CONST } from "../const/const"
+import { CONST } from '../const/const'
 
 export class HUDScene extends Phaser.Scene {
     private textElements: Map<string, Phaser.GameObjects.BitmapText>
-    private loadingBar: Phaser.GameObjects.Graphics
-    private progressBar: Phaser.GameObjects.Graphics
+    private loadingBar: Phaser.GameObjects.NineSlice
+    private progressBar: Phaser.GameObjects.NineSlice
     private progressParticle: Phaser.GameObjects.Particles.ParticleEmitter
     private textLock: boolean
     private target: number
@@ -18,22 +18,23 @@ export class HUDScene extends Phaser.Scene {
         this.target = CONST.milestone
         this.createLoadingbar()
         this.progressParticle = this.add
-            .particles(520, 160, 'flares', {
+            .particles(525, 157.5, 'flares', {
                 frame: 'white',
                 color: [0xaec6cf, 0x96e0da, 0x937ef3],
-                colorEase: 'quart.out',
-                lifespan: 250,
-                angle: { min: -20 + 180, max: 20 + 180 },
-                scale: { start: 0.21, end: 0, ease: 'sine.in' },
-                speed: { min: 50, max: 100 },
-                advance: 2000,
+                lifespan: 800,
+                angle: { min: -90 + 180, max: 90 + 180 },
+                scale: { start: 0.13, end: 0, ease: 'sine.in' },
+                speed: { min: 20, max: 30 },
                 blendMode: 'ADD',
             })
             .setAlpha(0)
             .setDepth(2)
 
         this.textElements = new Map([
-            ['TARGET', this.addText(520, 8, `Goal: ${this.registry.get('level') * CONST.milestone}`)],
+            [
+                'TARGET',
+                this.addText(520, 8, `Goal: ${this.registry.get('level') * CONST.milestone}`),
+            ],
             ['LEVEL', this.addText(520, 48, `Level: ${this.registry.get('level')}`)],
             ['SCORE', this.addText(520, 88, `Score: ${this.registry.get('score')}`)],
         ])
@@ -49,11 +50,17 @@ export class HUDScene extends Phaser.Scene {
     }
 
     private updateProgress() {
-        this.progressBar.clear()
-        this.progressBar.fillStyle(0x87ceeb, 1)
-        this.progressBar.fillRect(522, 152, (180 * this.registry.get('score')) / this.target, 16)
-        this.progressParticle.setAlpha(1)
-        this.progressParticle.setX(522 + (180 * this.registry.get('score')) / this.target)
+        this.tweens.add({
+            targets: this.progressBar,
+            width: (228 * this.registry.get('score')) / this.target,
+            duration: 200,
+            ease: 'sine.inout',
+            onComplete:()=>{
+                this.progressParticle.setAlpha(1)
+                this.progressParticle.setX(528 + (180 * this.registry.get('score')) / this.target)
+            }
+        })
+        
     }
 
     private updateScore() {
@@ -89,9 +96,9 @@ export class HUDScene extends Phaser.Scene {
     }
 
     private createLoadingbar(): void {
-        this.loadingBar = this.add.graphics()
-        this.loadingBar.fillStyle(0x004c8d, 1)
-        this.loadingBar.fillRect(520, 150, 182, 20)
-        this.progressBar = this.add.graphics()
+        this.loadingBar = this.add.nineslice(520, 160, 'ui', 'ButtonOrange')
+        this.progressBar = this.add.nineslice(528, 158, 'ui', 'ButtonOrangeFill1', 0, 16, 6, 6)
+        this.loadingBar.setOrigin(0, 0.5).setScale(0.75, 0.6)
+        this.progressBar.setOrigin(0, 0.5).setScale(0.75, 0.6)
     }
 }

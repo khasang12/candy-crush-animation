@@ -34,7 +34,7 @@ export class Tile extends Phaser.GameObjects.Sprite {
         this.scene.add.existing(this)
 
         // Tile Selected
-        const basesShader2 = new Phaser.Display.BaseShader('BufferShader2', fragmentShader3)
+        const basesShader2 = new Phaser.Display.BaseShader('BufferShader2', glowShader)
         this.selectedShader = this.scene.add
             .shader(basesShader2, this.x - 5, this.y, this.width * 1.2, this.height * 1.2)
             .setDepth(-1)
@@ -204,6 +204,32 @@ export class Tile extends Phaser.GameObjects.Sprite {
             })
     }
 }
+
+const glowShader = `
+precision mediump float;
+    uniform vec2      resolution;
+    uniform float     time;
+    uniform sampler2D uMainSampler;
+    varying vec2      outTexCoord;
+
+    void main()
+    {
+        vec4 color = texture2D(uMainSampler, outTexCoord);
+        vec2 uv = outTexCoord.xy / resolution.xy;
+        float d = 0.01;
+        vec4 sum = vec4(0.0);
+        sum += texture2D(uMainSampler, vec2(uv.x, uv.y - 4.0*d)) * 0.05;
+        sum += texture2D(uMainSampler, vec2(uv.x, uv.y - 3.0*d)) * 0.09;
+        sum += texture2D(uMainSampler, vec2(uv.x, uv.y - 2.0*d)) * 0.12;
+        sum += texture2D(uMainSampler, vec2(uv.x, uv.y - d)) * 0.15;
+        sum += texture2D(uMainSampler, vec2(uv.x, uv.y)) * 0.16;
+        sum += texture2D(uMainSampler, vec2(uv.x, uv.y + d)) * 0.15;
+        sum += texture2D(uMainSampler, vec2(uv.x, uv.y + 2.0*d)) * 0.12;
+        sum += texture2D(uMainSampler, vec2(uv.x, uv.y + 3.0*d)) * 0.09;
+        sum += texture2D(uMainSampler, vec2(uv.x, uv.y + 4.0*d)) * 0.05;
+        gl_FragColor = sum * 1.5 + color * 0.5;
+    }
+`
 
 const fragmentShader3 = `
 precision mediump float;
