@@ -3,6 +3,7 @@ import { IImageConstructor } from '../interfaces/image.interface'
 export class Tile extends Phaser.GameObjects.Sprite {
     private isGlow4: boolean
     private isGlow5: boolean
+    private matchExplode3: Phaser.GameObjects.Particles.ParticleEmitter
     private matchGlow4: Phaser.GameObjects.Particles.ParticleEmitter
     private matchGlow5: Phaser.GameObjects.Particles.ParticleEmitter
     private selectedShader: Phaser.GameObjects.Shader
@@ -93,6 +94,25 @@ export class Tile extends Phaser.GameObjects.Sprite {
         }
     }
 
+    public enableExplode3(): void {
+        if (!this.matchExplode3)
+            this.matchExplode3 = this.scene.add
+                .particles(this.x, this.y, 'tiles', {
+                    frame: this.texture.key,
+                    speed: 50,
+                    advance: 50,
+                    duration: 100,
+                    lifespan: 200,
+                    scale: { start: 0.5, end: 0.2 },
+                    emitting: false,
+                    maxAliveParticles: 5,
+                })
+                .setActive(false)
+                .startFollow(this, -this.x, -this.y)
+        this.matchExplode3.setActive(true).setTexture(this.texture.key)
+        this.matchExplode3.start()
+    }
+
     public enableGlow4(): void {
         if (!this.matchGlow4)
             this.matchGlow4 = this.scene.add
@@ -138,6 +158,7 @@ export class Tile extends Phaser.GameObjects.Sprite {
     }
 
     public disableGlow(): void {
+        if (this.matchExplode3) this.matchExplode3.stop()
         if (this.matchGlow4) this.matchGlow4.stop()
         if (this.matchGlow5) this.matchGlow5.stop()
         this.match4Tween?.destroy()
@@ -226,32 +247,6 @@ export class Tile extends Phaser.GameObjects.Sprite {
             })
     }
 }
-
-const glowShader = `
-precision mediump float;
-    uniform vec2      resolution;
-    uniform float     time;
-    uniform sampler2D uMainSampler;
-    varying vec2      outTexCoord;
-
-    void main()
-    {
-        vec4 color = texture2D(uMainSampler, outTexCoord);
-        vec2 uv = outTexCoord.xy / resolution.xy;
-        float d = 0.01;
-        vec4 sum = vec4(0.0);
-        sum += texture2D(uMainSampler, vec2(uv.x, uv.y - 4.0*d)) * 0.05;
-        sum += texture2D(uMainSampler, vec2(uv.x, uv.y - 3.0*d)) * 0.09;
-        sum += texture2D(uMainSampler, vec2(uv.x, uv.y - 2.0*d)) * 0.12;
-        sum += texture2D(uMainSampler, vec2(uv.x, uv.y - d)) * 0.15;
-        sum += texture2D(uMainSampler, vec2(uv.x, uv.y)) * 0.16;
-        sum += texture2D(uMainSampler, vec2(uv.x, uv.y + d)) * 0.15;
-        sum += texture2D(uMainSampler, vec2(uv.x, uv.y + 2.0*d)) * 0.12;
-        sum += texture2D(uMainSampler, vec2(uv.x, uv.y + 3.0*d)) * 0.09;
-        sum += texture2D(uMainSampler, vec2(uv.x, uv.y + 4.0*d)) * 0.05;
-        gl_FragColor = sum * 1.5 + color * 0.5;
-    }
-`
 
 const fragmentShader3 = `
 precision mediump float;

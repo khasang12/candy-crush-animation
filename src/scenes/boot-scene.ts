@@ -50,6 +50,7 @@ export class BootScene extends Phaser.Scene {
         this.load.image('pixel-red', 'assets/particles/pixel_red.png')
         this.load.image('pixel-green', 'assets/particles/pixel_green.png')
         this.load.image('pixel-blue', 'assets/particles/pixel_blue.png')
+        this.load.atlas('tiles', 'assets/particles/tiles.png', 'assets/particles/tiles.json')
     }
 
     init(): void {

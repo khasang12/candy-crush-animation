@@ -572,7 +572,7 @@ export class GameScene extends Phaser.Scene {
             if (this.canMove && !this.isRedisting && traversed) {
                 this.canMove = false
                 this.tileUp(() => {
-                    this.time.delayedCall(500, () => {
+                    this.time.delayedCall(800, () => {
                         callback()
                     })
                 })
@@ -590,40 +590,6 @@ export class GameScene extends Phaser.Scene {
             tile2.getAttracted('UP')
         }
         callback()
-
-        /* 
-        const [oriX, oriY] = [
-            tileGroup.reduce((min, tile) => {
-                return Math.min(tile.x, min)
-            }, Number.MAX_SAFE_INTEGER),
-            tileGroup.reduce((min, tile) => {
-                return Math.min(tile.y, min)
-            }, Number.MAX_SAFE_INTEGER),
-        ]
-        const [eastX, eastY] = [
-            tileGroup.reduce((max, tile) => {
-                return Math.max(tile.x, max)
-            }, Number.MIN_SAFE_INTEGER) + tileGroup[0].width,
-            tileGroup.reduce((max, tile) => {
-                return Math.max(tile.y, max)
-            }, Number.MIN_SAFE_INTEGER) + tileGroup[0].width,
-        ]
-        const rect = new Phaser.Geom.Rectangle(
-            -tileGroup[0].width / 2,
-            -tileGroup[0].height / 2,
-            -oriX + eastX,
-            -oriY + eastY
-        )
-        const zone = this.matchParticle.setPosition(oriX, oriY).addEmitZone({
-            type: 'edge',
-            source: rect,
-            quantity: 32,
-            total: 1,
-        })
-        this.matchParticle.start(1500)
-        this.time.delayedCall(1500, () => {
-            this.matchParticle.removeEmitZone(zone[0])
-        }) */
     }
 
     private emitScoreText(tempArr: Tile[]) {
