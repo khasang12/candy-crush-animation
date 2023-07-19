@@ -64,6 +64,7 @@ export class HUDScene extends Phaser.Scene {
     }
 
     private updateScore() {
+        console.log(this.registry.get('score'))
         this.textElements.get('SCORE')?.setText(`Score: ${this.registry.get('score')}`)
         this.updateProgress()
         if (

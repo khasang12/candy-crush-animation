@@ -98,14 +98,15 @@ export class Tile extends Phaser.GameObjects.Sprite {
         if (!this.matchExplode3)
             this.matchExplode3 = this.scene.add
                 .particles(this.x, this.y, 'tiles', {
-                    frame: this.texture.key,
+                    //frame: this.texture.key,
                     speed: 50,
-                    advance: 50,
+                    advance: 20,
                     duration: 100,
-                    lifespan: 200,
-                    scale: { start: 0.5, end: 0.2 },
+                    lifespan: 250,
+                    scale: 0.5,
                     emitting: false,
                     maxAliveParticles: 5,
+                    delay: 20,
                 })
                 .setActive(false)
                 .startFollow(this, -this.x, -this.y)

@@ -673,7 +673,6 @@ export class GameScene extends Phaser.Scene {
 
     public shuffle() {
         if (!this.isRedisting) {
-            console.log('shuffle')
             if (this.matchParticle) this.matchParticle.stop()
             this.isRedisting = true
             this.canMove = false
@@ -698,6 +697,7 @@ export class GameScene extends Phaser.Scene {
                 shapeObj = new Phaser.Geom.Rectangle(...CONST.rectangle)
                 Phaser.Actions.PlaceOnRectangle(group.getChildren(), shapeObj)
             }
+
             this.add.tween({
                 targets: shapeObj,
                 radius: 200,

@@ -163,41 +163,16 @@ export default class TileManager {
     }
 
     public removeMatch3(tempArr: Tile[], callback: () => void) {
-        /* this.scene.add.tween({
-            targets: [tempArr[0], tempArr[1], tempArr[2]],
-            scale: 0.65,
-            yoyo: true,
-            duration: 100,
-            autoDestroy: true,
-            ease: 'sine.in',
-            onComplete: () => {
-                for (const tile of tempArr) {
-                    const tilePos = this.getTilePos(<Tile[][]>this.tileGrid, tile)
-                    if (tilePos.x !== -1 && tilePos.y !== -1) {
-                        this.returnItem(tile as Tile)
-                        this.tileGrid[tilePos.y][tilePos.x] = undefined
-                    }
-                }
-                callback()
-            },
-        }) */
         for (const tile of tempArr) {
             const tilePos = this.getTilePos(<Tile[][]>this.tileGrid, tile)
             if (tilePos.x !== -1 && tilePos.y !== -1) {
-                tile.enableExplode3()
+                tile.setAlpha(0)
                 this.returnItem(tile as Tile)
+                tile.enableExplode3()
                 this.tileGrid[tilePos.y][tilePos.x] = undefined
             }
         }
         callback()
-        /* for (const tile of tempArr) {
-            const tilePos = this.getTilePos(<Tile[][]>this.tileGrid, tile)
-            if (tilePos.x !== -1 && tilePos.y !== -1) {
-                this.returnItem(tile as Tile)
-                this.tileGrid[tilePos.y][tilePos.x] = undefined
-            }
-        }
-        callback() */
     }
 
     public removeMatch4(tempArr: Tile[], callback: () => void) {
