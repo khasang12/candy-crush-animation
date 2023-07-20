@@ -197,7 +197,7 @@ export class GameScene extends Phaser.Scene {
     private checkMatches(): void {
         //Call the getMatches function to check for spots where there is
         //a run of three or more tiles in a row
-        const matches = this.getMatches(<Tile[][]>this.tileGrid)
+        const matches = TileManager.getMatches(<Tile[][]>this.tileGrid)
         //If there are matches, remove them
         if (matches.length > 0 && !this.isRemoving) {
             this.removeTileGroup(matches, () =>
@@ -282,20 +282,19 @@ export class GameScene extends Phaser.Scene {
 
     private tileUp(callback: () => void): void {
         if (this.secondSelectedTile) {
-            // Reset active tiles
             this.firstSelectedTile = undefined
             this.secondSelectedTile = undefined
         }
         callback()
     }
 
+    // REMOVAL
     private removeTileGroup(matches: any, callback: () => void): void {
         // Loop through all the matches and remove the associated tiles
         this.isRemoving = true
         for (const tempArr of matches) {
             // Score
             this.emitScoreText(tempArr)
-
             // Emitter
             let [glow4, glow5] = [undefined, undefined]
             for (const ele of tempArr) if (ele.isGlowed5()) glow5 = ele
@@ -308,105 +307,32 @@ export class GameScene extends Phaser.Scene {
                 this.tileManager.emitGlow5(glow5, tempArr)
             }
             this.particleManager.emitLineToScoreboard(tempArr)
-
             // Removal
-            switch (tempArr.length) {
-                case 3:
-                    this.tileManager.removeMatch3(tempArr, () => {
-                        this.isRemoving = false
-                    })
-                    break
-                case 4:
-                    this.tileManager.removeMatch4(tempArr, () => {
-                        this.isRemoving = false
-                    })
-                    break
-                case 5:
-                    this.tileManager.removeMatch5(tempArr, () => {
-                        this.isRemoving = false
-                    })
-                    break
-            }
+            this.removeByMatch(tempArr)
         }
         callback()
     }
-
-    private getMatches(tileGrid: Tile[][]): Tile[][] {
-        const matches: Tile[][] = []
-        let groups: Tile[] = []
-
-        // Check for horizontal matches
-        for (const element of tileGrid) {
-            const tempArray = element
-            groups = []
-            for (let x = 0; x < tempArray.length; x++) {
-                if (x < tempArray.length - 2) {
-                    if (element[x] && element[x + 1] && element[x + 2]) {
-                        if (
-                            element[x].frame === element[x + 1].frame &&
-                            element[x + 1].frame === element[x + 2].frame
-                        ) {
-                            if (groups.length > 0) {
-                                if (groups.indexOf(element[x]) == -1) {
-                                    matches.push(groups)
-                                    groups = []
-                                }
-                            }
-
-                            if (groups.indexOf(element[x]) == -1) {
-                                groups.push(element[x])
-                            }
-
-                            if (groups.indexOf(element[x + 1]) == -1) {
-                                groups.push(element[x + 1])
-                            }
-
-                            if (groups.indexOf(element[x + 2]) == -1) {
-                                groups.push(element[x + 2])
-                            }
-                        }
-                    }
-                }
-            }
-
-            if (groups.length > 0) {
-                matches.push(groups)
-            }
+    private removeByMatch(tempArr: Tile[]) {
+        switch (tempArr.length) {
+            case 3:
+                this.tileManager.removeMatch3(tempArr, () => {
+                    this.isRemoving = false
+                })
+                break
+            case 4:
+                this.tileManager.removeMatch4(tempArr, () => {
+                    this.isRemoving = false
+                })
+                break
+            case 5:
+                this.tileManager.removeMatch5(tempArr, () => {
+                    this.isRemoving = false
+                })
+                break
         }
-
-        //Check for vertical matches
-        for (let j = 0; j < tileGrid.length; j++) {
-            const tempArr = tileGrid[j]
-            groups = []
-            for (let i = 0; i < tempArr.length; i++) {
-                if (i < tempArr.length - 2)
-                    if (tileGrid[i][j] && tileGrid[i + 1][j] && tileGrid[i + 2][j]) {
-                        if (
-                            tileGrid[i][j].frame === tileGrid[i + 1][j].frame &&
-                            tileGrid[i + 1][j].frame === tileGrid[i + 2][j].frame
-                        ) {
-                            if (groups.length > 0 && groups.indexOf(tileGrid[i][j]) == -1) {
-                                matches.push(groups)
-                                groups = []
-                            }
-
-                            if (groups.indexOf(tileGrid[i][j]) == -1) {
-                                groups.push(tileGrid[i][j])
-                            }
-                            if (groups.indexOf(tileGrid[i + 1][j]) == -1) {
-                                groups.push(tileGrid[i + 1][j])
-                            }
-                            if (groups.indexOf(tileGrid[i + 2][j]) == -1) {
-                                groups.push(tileGrid[i + 2][j])
-                            }
-                        }
-                    }
-            }
-            if (groups.length > 0) matches.push(groups)
-        }
-        return matches
     }
 
+    // IDLE
     public idle() {
         let time = 0
         for (let j = 0; j < this.tileGrid.length; j++) {
@@ -430,46 +356,44 @@ export class GameScene extends Phaser.Scene {
         }
     }
 
+    // SUGGESTION
     private getNextMove(callback: () => void): void {
+        const [g, len] = [this.tileGrid, this.tileGrid.length]
+        const moves = [
+            [1, 0],
+            [-1, 0],
+            [0, 1],
+            [0, -1],
+        ]
         if (!this.isSuggested && this.canMove) {
             let traversed = false
             this.resetTile(() => {
-                for (let i = 0; i < this.tileGrid.length; i++) {
-                    for (let j = 0; j < this.tileGrid.length; j++) {
-                        if (this.tileGrid[i][j] !== undefined) {
-                            for (const [dx, dy] of [
-                                [1, 0],
-                                [-1, 0],
-                                [0, 1],
-                                [0, -1],
-                            ]) {
+                for (let i = 0; i < len; i++) {
+                    for (let j = 0; j < len; j++) {
+                        if (g[i][j] !== undefined) {
+                            for (const [dx, dy] of moves) {
                                 const x2 = i + dx
                                 const y2 = j + dy
                                 if (
                                     x2 >= 0 &&
-                                    x2 < this.tileGrid.length &&
+                                    x2 < len &&
                                     y2 >= 0 &&
-                                    y2 < this.tileGrid.length &&
-                                    this.tileGrid[x2][y2] !== undefined
+                                    y2 < len &&
+                                    g[x2][y2] !== undefined
                                 ) {
                                     // Swap the candies
                                     // eslint-disable-next-line @typescript-eslint/no-extra-semi
-                                    ;[this.tileGrid[i][j], this.tileGrid[x2][y2]] = [
-                                        this.tileGrid[x2][y2],
-                                        this.tileGrid[i][j],
-                                    ]
-                                    // Calculate the score of the new this.tileGrid
-                                    const matches = this.getMatches(<Tile[][]>this.tileGrid)
+                                    ;[g[i][j], g[x2][y2]] = [g[x2][y2], g[i][j]]
+                                    // Calculate the score of the new g
+                                    const matches = TileManager.getMatches(<Tile[][]>g)
                                     if (matches.length > 0) {
                                         // eslint-disable-next-line @typescript-eslint/no-extra-semi
-                                        ;[this.tileGrid[i][j], this.tileGrid[x2][y2]] = [
-                                            this.tileGrid[x2][y2],
-                                            this.tileGrid[i][j],
-                                        ]
+                                        ;[g[i][j], g[x2][y2]] = [g[x2][y2], g[i][j]]
                                         if (!this.isSuggested && this.canMove) {
-                                            this.emitSuggestion(
-                                                this.tileGrid[i][j] as Tile,
-                                                this.tileGrid[x2][y2] as Tile,
+                                            this.canMove = false
+                                            TileManager.emitSuggestion(
+                                                g[i][j] as Tile,
+                                                g[x2][y2] as Tile,
                                                 () => (this.canMove = true)
                                             )
                                             this.isSuggested = true
@@ -478,15 +402,8 @@ export class GameScene extends Phaser.Scene {
                                     }
                                     // Swap the candies back to their original positions
                                     // eslint-disable-next-line @typescript-eslint/no-extra-semi
-                                    ;[this.tileGrid[i][j], this.tileGrid[x2][y2]] = [
-                                        this.tileGrid[x2][y2],
-                                        this.tileGrid[i][j],
-                                    ]
-                                    if (
-                                        i == this.tileGrid.length - 1 &&
-                                        j == this.tileGrid.length - 1
-                                    )
-                                        traversed = true
+                                    ;[g[i][j], g[x2][y2]] = [g[x2][y2], g[i][j]]
+                                    if (i == len - 1 && j == len - 1) traversed = true
                                 }
                             }
                         }
@@ -505,20 +422,8 @@ export class GameScene extends Phaser.Scene {
         }
     }
 
-    public emitSuggestion(tile1: Tile, tile2: Tile, callback: () => void) {
-        this.canMove = false
-        if (tile1.y == tile2.y) {
-            tile1.getAttracted('RIGHT')
-            tile2.getAttracted('LEFT')
-        } else {
-            tile1.getAttracted('DOWN')
-            tile2.getAttracted('UP')
-        }
-        callback()
-    }
-
+    // SCORE UPDATE
     private emitScoreText(tempArr: Tile[]) {
-        console.log('score')
         this.scoreText.setPosition(tempArr[1].x - 20, tempArr[1].y - 5)
         const length = tempArr.length
         this.scoreText.setText(CONST.matchScore[length])
@@ -555,6 +460,7 @@ export class GameScene extends Phaser.Scene {
         })
     }
 
+    // SHUFFLE
     public shuffle() {
         if (!this.isRedisting) {
             this.particleManager.stopMatchParticle(true)
@@ -565,22 +471,8 @@ export class GameScene extends Phaser.Scene {
                 this.tileGrid.flat().filter((x) => x != undefined)
             )
 
-            for (const obj of objects) obj.setPosition(510 / 2, 575 / 2)
-
-            const group = this.add.group(objects)
             const RANDOM_SHAPE = CONST.shape[Phaser.Math.RND.between(0, CONST.shape.length - 1)]
-
-            let shapeObj
-            if (RANDOM_SHAPE === 'circle') {
-                shapeObj = new Phaser.Geom.Circle(...CONST.circle)
-                Phaser.Actions.PlaceOnCircle(group.getChildren(), shapeObj)
-            } else if (RANDOM_SHAPE === 'triangle') {
-                shapeObj = new Phaser.Geom.Triangle(...CONST.triangle)
-                Phaser.Actions.PlaceOnTriangle(group.getChildren(), shapeObj)
-            } else if (RANDOM_SHAPE === 'rectangle') {
-                shapeObj = new Phaser.Geom.Rectangle(...CONST.rectangle)
-                Phaser.Actions.PlaceOnRectangle(group.getChildren(), shapeObj)
-            }
+            const shapeObj = this.createPattern(objects, RANDOM_SHAPE)
 
             this.add.tween({
                 targets: shapeObj,
@@ -592,44 +484,57 @@ export class GameScene extends Phaser.Scene {
                 onStart: () => {
                     this.particleManager.stopMatchParticle(true)
                 },
-                onUpdate: function () {
-                    if (RANDOM_SHAPE === 'circle')
-                        Phaser.Actions.RotateAroundDistance(
-                            objects,
-                            { x: 510 / 2, y: 575 / 2 },
-                            0.02,
-                            200
-                        )
-                    else Phaser.Actions.RotateAround(objects, { x: 510 / 2, y: 575 / 2 }, 0.02)
-                },
-                onComplete: () => {
-                    this.isRedisting = false
-                    clearTimeout(this.inactivityTimer)
-                    let i = 200
-                    for (let y = 0; y < CONST.gridHeight; y++) {
-                        for (let x = 0; x < CONST.gridWidth; x++) {
-                            const randomTileType: string =
-                                CONST.candyTypes[
-                                    Phaser.Math.RND.between(0, CONST.candyTypes.length - 1)
-                                ]
-                            this.tileGrid[y][x]?.setTexture('tiles', randomTileType)
-                            this.tileGrid[y][x]?.revealImageWithDelay(
-                                x * CONST.tileWidth + CONST.tileWidth / 2,
-                                y * CONST.tileHeight + CONST.tileHeight / 2,
-                                i
-                            )
-                            i += 10
-                        }
-                    }
-                    this.isSuggested = true
-                    this.canMove = true
-                    this.time.delayedCall(2000, () => {
-                        this.checkMatches()
-                        this.particleManager.stopMatchParticle(false)
-                        this.isSuggested = false
-                    })
-                },
+                onUpdate: () => this.onUpdateShuffle(objects, RANDOM_SHAPE),
+                onComplete: () => this.onCompleteShuffle(),
             })
         }
+    }
+
+    private createPattern(objects: Phaser.GameObjects.Sprite[], shape: string) {
+        const group = this.add.group(objects)
+        let shapeObj
+        if (shape === 'circle') {
+            shapeObj = new Phaser.Geom.Circle(...CONST.circle)
+            Phaser.Actions.PlaceOnCircle(group.getChildren(), shapeObj)
+        } else if (shape === 'triangle') {
+            shapeObj = new Phaser.Geom.Triangle(...CONST.triangle)
+            Phaser.Actions.PlaceOnTriangle(group.getChildren(), shapeObj)
+        } else if (shape === 'rectangle') {
+            shapeObj = new Phaser.Geom.Rectangle(...CONST.rectangle)
+            Phaser.Actions.PlaceOnRectangle(group.getChildren(), shapeObj)
+        }
+        return shapeObj
+    }
+
+    private onUpdateShuffle(objects: Phaser.GameObjects.Sprite[], shape: string) {
+        if (shape === 'circle')
+            Phaser.Actions.RotateAroundDistance(objects, { x: 510 / 2, y: 575 / 2 }, 0.02, 200)
+        else Phaser.Actions.RotateAround(objects, { x: 510 / 2, y: 575 / 2 }, 0.02)
+    }
+
+    private onCompleteShuffle() {
+        this.isRedisting = false
+        clearTimeout(this.inactivityTimer)
+        let i = 200
+        for (let y = 0; y < CONST.gridHeight; y++) {
+            for (let x = 0; x < CONST.gridWidth; x++) {
+                const randomTileType: string =
+                    CONST.candyTypes[Phaser.Math.RND.between(0, CONST.candyTypes.length - 1)]
+                this.tileGrid[y][x]?.setTexture('tiles', randomTileType)
+                this.tileGrid[y][x]?.revealImageWithDelay(
+                    x * CONST.tileWidth + CONST.tileWidth / 2,
+                    y * CONST.tileHeight + CONST.tileHeight / 2,
+                    i
+                )
+                i += 10
+            }
+        }
+        this.isSuggested = true
+        this.canMove = true
+        this.time.delayedCall(2000, () => {
+            this.checkMatches()
+            this.particleManager.stopMatchParticle(false)
+            this.isSuggested = false
+        })
     }
 }

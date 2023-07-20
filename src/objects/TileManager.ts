@@ -227,4 +227,91 @@ export default class TileManager {
             },
         })
     }
+
+    public static getMatches(tileGrid: Tile[][]): Tile[][] {
+        const matches: Tile[][] = []
+        let groups: Tile[] = []
+
+        // Check for horizontal matches
+        for (const element of tileGrid) {
+            const tempArray = element
+            groups = []
+            for (let x = 0; x < tempArray.length; x++) {
+                if (x < tempArray.length - 2) {
+                    if (element[x] && element[x + 1] && element[x + 2]) {
+                        if (
+                            element[x].frame === element[x + 1].frame &&
+                            element[x + 1].frame === element[x + 2].frame
+                        ) {
+                            if (groups.length > 0) {
+                                if (groups.indexOf(element[x]) == -1) {
+                                    matches.push(groups)
+                                    groups = []
+                                }
+                            }
+
+                            if (groups.indexOf(element[x]) == -1) {
+                                groups.push(element[x])
+                            }
+
+                            if (groups.indexOf(element[x + 1]) == -1) {
+                                groups.push(element[x + 1])
+                            }
+
+                            if (groups.indexOf(element[x + 2]) == -1) {
+                                groups.push(element[x + 2])
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (groups.length > 0) {
+                matches.push(groups)
+            }
+        }
+
+        //Check for vertical matches
+        for (let j = 0; j < tileGrid.length; j++) {
+            const tempArr = tileGrid[j]
+            groups = []
+            for (let i = 0; i < tempArr.length; i++) {
+                if (i < tempArr.length - 2)
+                    if (tileGrid[i][j] && tileGrid[i + 1][j] && tileGrid[i + 2][j]) {
+                        if (
+                            tileGrid[i][j].frame === tileGrid[i + 1][j].frame &&
+                            tileGrid[i + 1][j].frame === tileGrid[i + 2][j].frame
+                        ) {
+                            if (groups.length > 0 && groups.indexOf(tileGrid[i][j]) == -1) {
+                                matches.push(groups)
+                                groups = []
+                            }
+
+                            if (groups.indexOf(tileGrid[i][j]) == -1) {
+                                groups.push(tileGrid[i][j])
+                            }
+                            if (groups.indexOf(tileGrid[i + 1][j]) == -1) {
+                                groups.push(tileGrid[i + 1][j])
+                            }
+                            if (groups.indexOf(tileGrid[i + 2][j]) == -1) {
+                                groups.push(tileGrid[i + 2][j])
+                            }
+                        }
+                    }
+            }
+            if (groups.length > 0) matches.push(groups)
+        }
+        return matches
+    }
+
+    public static emitSuggestion(tile1: Tile, tile2: Tile, callback: () => void) {
+        if (tile1.y == tile2.y) {
+            tile1.getAttracted('RIGHT')
+            tile2.getAttracted('LEFT')
+        } else {
+            tile1.getAttracted('DOWN')
+            tile2.getAttracted('UP')
+        }
+        callback()
+    }
 }
