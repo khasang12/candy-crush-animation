@@ -35,7 +35,8 @@ export default class TileManager {
             scene: this.scene,
             x: x * CONST.tileWidth + CONST.tileWidth / 2,
             y: y * CONST.tileHeight + CONST.tileHeight / 2,
-            texture: randomTileType,
+            texture: 'tiles',
+            frame: randomTileType,
             delay: delay,
         })
     }
@@ -63,7 +64,7 @@ export default class TileManager {
             CONST.candyTypes[Phaser.Math.RND.between(0, CONST.candyTypes.length - 1)]
 
         // Return the created tile
-        tile.setTexture(randomTileType).setAlpha(0)
+        tile.setTexture('tiles', randomTileType).setAlpha(0)
         tile.setPosition(x * CONST.tileWidth + CONST.tileWidth / 2, -100)
         tile.revealImageWithDelay(
             x * CONST.tileWidth + CONST.tileWidth / 2,
@@ -167,8 +168,8 @@ export default class TileManager {
             const tilePos = this.getTilePos(<Tile[][]>this.tileGrid, tile)
             if (tilePos.x !== -1 && tilePos.y !== -1) {
                 tile.setAlpha(0)
-                this.returnItem(tile as Tile)
                 tile.enableExplode3()
+                this.returnItem(tile as Tile)
                 this.tileGrid[tilePos.y][tilePos.x] = undefined
             }
         }

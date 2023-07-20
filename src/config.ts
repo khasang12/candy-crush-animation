@@ -22,4 +22,7 @@ export const GameConfig: Phaser.Types.Core.GameConfig = {
         target: 60,
         forceSetTimeOut: true,
     },
+    clearBeforeRender: false,
+    powerPreference: 'high-performance',
+    batchSize: 1024,
 }

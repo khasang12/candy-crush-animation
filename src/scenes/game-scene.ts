@@ -78,7 +78,7 @@ export class GameScene extends Phaser.Scene {
     init(): void {
         /* this.addStats()
         this.countDrawCalls() */
-        console.log(this.children);
+        console.log(this.children)
 
         // Variables
         this.tileManager = new TileManager(this)
@@ -417,8 +417,8 @@ export class GameScene extends Phaser.Scene {
                 if (x < tempArray.length - 2) {
                     if (element[x] && element[x + 1] && element[x + 2]) {
                         if (
-                            element[x].texture.key === element[x + 1].texture.key &&
-                            element[x + 1].texture.key === element[x + 2].texture.key
+                            element[x].frame === element[x + 1].frame &&
+                            element[x + 1].frame === element[x + 2].frame
                         ) {
                             if (groups.length > 0) {
                                 if (groups.indexOf(element[x]) == -1) {
@@ -456,8 +456,8 @@ export class GameScene extends Phaser.Scene {
                 if (i < tempArr.length - 2)
                     if (tileGrid[i][j] && tileGrid[i + 1][j] && tileGrid[i + 2][j]) {
                         if (
-                            tileGrid[i][j].texture.key === tileGrid[i + 1][j].texture.key &&
-                            tileGrid[i + 1][j].texture.key === tileGrid[i + 2][j].texture.key
+                            tileGrid[i][j].frame === tileGrid[i + 1][j].frame &&
+                            tileGrid[i + 1][j].frame === tileGrid[i + 2][j].frame
                         ) {
                             if (groups.length > 0 && groups.indexOf(tileGrid[i][j]) == -1) {
                                 matches.push(groups)
@@ -731,7 +731,7 @@ export class GameScene extends Phaser.Scene {
                                 CONST.candyTypes[
                                     Phaser.Math.RND.between(0, CONST.candyTypes.length - 1)
                                 ]
-                            this.tileGrid[y][x]?.setTexture(randomTileType)
+                            this.tileGrid[y][x]?.setTexture('tiles', randomTileType)
                             this.tileGrid[y][x]?.revealImageWithDelay(
                                 x * CONST.tileWidth + CONST.tileWidth / 2,
                                 y * CONST.tileHeight + CONST.tileHeight / 2,

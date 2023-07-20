@@ -75,11 +75,9 @@ export class HUDScene extends Phaser.Scene {
         ) {
             this.registry.values.level += 1
             this.textLock = true
-            this.time.delayedCall(300, () => {
-                this.updateLevel()
-                this.updateScore()
-                this.progressParticle.setAlpha(0)
-            })
+            this.updateLevel()
+            this.updateScore()
+            this.progressParticle.setAlpha(0)
         } else {
             this.textLock = false
         }

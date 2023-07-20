@@ -97,8 +97,7 @@ export class Tile extends Phaser.GameObjects.Sprite {
     public enableExplode3(): void {
         if (!this.matchExplode3)
             this.matchExplode3 = this.scene.add
-                .particles(this.x, this.y, 'tiles', {
-                    //frame: this.texture.key,
+                .particles(this.x, this.y, 'flare', {
                     speed: 50,
                     advance: 20,
                     duration: 100,
@@ -110,7 +109,7 @@ export class Tile extends Phaser.GameObjects.Sprite {
                 })
                 .setActive(false)
                 .startFollow(this, -this.x, -this.y)
-        this.matchExplode3.setActive(true).setTexture(this.texture.key)
+        this.matchExplode3.setActive(true)
         this.matchExplode3.start()
     }
 
