@@ -19,16 +19,18 @@ export class HUDScene extends Phaser.Scene {
         this.createLoadingbar()
         this.progressParticle = this.add
             .particles(525, 157.5, 'flares', {
+                y: { min: -5, max: +5 },
                 frame: 'white',
-                color: [0xaec6cf, 0x96e0da, 0x937ef3],
+                color: [0x69a6d1, 0x94dfff, 0xc9ebef],
                 lifespan: 800,
                 angle: { min: -90 + 180, max: 90 + 180 },
-                scale: { start: 0.13, end: 0, ease: 'sine.in' },
+                scale: { start: 0.05, end: 0, ease: 'sine.in' },
                 speed: { min: 20, max: 30 },
-                blendMode: 'ADD',
+                blendMode: 'NORMAL',
+                quantity: 3,
             })
             .setAlpha(0)
-            .setDepth(2)
+            .setDepth(1)
 
         this.textElements = new Map([
             [
@@ -55,12 +57,11 @@ export class HUDScene extends Phaser.Scene {
             width: (228 * this.registry.get('score')) / this.target,
             duration: 200,
             ease: 'sine.inout',
-            onComplete:()=>{
+            onComplete: () => {
                 this.progressParticle.setAlpha(1)
                 this.progressParticle.setX(528 + (180 * this.registry.get('score')) / this.target)
-            }
+            },
         })
-        
     }
 
     private updateScore() {

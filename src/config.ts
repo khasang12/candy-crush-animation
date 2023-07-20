@@ -24,5 +24,5 @@ export const GameConfig: Phaser.Types.Core.GameConfig = {
     },
     clearBeforeRender: false,
     powerPreference: 'high-performance',
-    batchSize: 1024,
+    batchSize: 1024
 }

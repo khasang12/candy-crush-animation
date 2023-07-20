@@ -19,6 +19,7 @@ export class Tile extends Phaser.GameObjects.Sprite {
         this.setOrigin(0.5, 0.5)
         this.setScale(0.8)
         this.setInteractive()
+        //this.setPipeline('Custom')
 
         // Tile Spawned
         if (aParams.delay) {
@@ -124,7 +125,7 @@ export class Tile extends Phaser.GameObjects.Sprite {
                     angle: { min: -0, max: -360 },
                     scale: { start: 0.5, end: 0, ease: 'sine.out' },
                     speed: 100,
-                    blendMode: 'ADD',
+                    blendMode: 'NORMAL',
                     emitting: false,
                 })
                 .setActive(false)
@@ -138,7 +139,7 @@ export class Tile extends Phaser.GameObjects.Sprite {
     public enableGlow5(): void {
         if (!this.matchGlow5)
             this.matchGlow5 = this.scene.add
-                .particles(this.x, this.y, 'flares', {
+                .particles(this.x, this.y, 'flare', {
                     frame: 'white',
                     color: [0x96e0da, 0x937ef3],
                     colorEase: 'quart.out',
@@ -146,7 +147,7 @@ export class Tile extends Phaser.GameObjects.Sprite {
                     angle: [0 + 45, 90 + 45, 180 + 45, 270 + 45],
                     scale: { start: 0.5, end: 0, ease: 'sine.in' },
                     speed: 100,
-                    blendMode: 'ADD',
+                    blendMode: 'NORMAL',
                     emitting: false,
                 })
                 .setActive(false)

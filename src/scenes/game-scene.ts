@@ -2,6 +2,7 @@ import { CONST } from '../const/const'
 import { Tile } from '../objects/Tile'
 import TileManager from '../objects/TileManager'
 import ConfettiParticle from '../objects/particles/ConfettiParticle'
+import ShinePipeline from '../pipeline/ShinePipeline'
 
 export class GameScene extends Phaser.Scene {
     // Global Animation
@@ -80,6 +81,14 @@ export class GameScene extends Phaser.Scene {
         this.countDrawCalls() */
         console.log(this.children)
 
+        const renderer = this.game.renderer as Phaser.Renderer.WebGL.WebGLRenderer
+        const customPipeline = renderer.pipelines.add('Custom', new ShinePipeline(this.game))
+        customPipeline.set2f(
+            'uResolution',
+            this.game.config.width as number,
+            this.game.config.height as number
+        )
+
         // Variables
         this.tileManager = new TileManager(this)
 
@@ -136,16 +145,15 @@ export class GameScene extends Phaser.Scene {
             angle: { min: -60, max: -50 },
             scale: { start: 0.3, end: 0 },
             gravityY: 300,
-            blendMode: 'ADD',
             emitting: false,
             frequency: 60,
             quantity: 5,
             particleClass: ConfettiParticle,
+            collideBottom: true
         })
 
         this.matchParticle = this.add.particles(0, 0, 'flares', {
             frame: { frames: ['red', 'green', 'blue'], cycle: true },
-            blendMode: 'ADD',
             lifespan: 500,
             emitting: false,
             scale: { start: 0.5, end: 0.1 },
@@ -163,7 +171,6 @@ export class GameScene extends Phaser.Scene {
 
         this.match3x3Particle = this.add.particles(0, 0, 'flares', {
             frame: { frames: ['red', 'green', 'blue'], cycle: true },
-            blendMode: 'ADD',
             lifespan: 250,
             emitting: false,
             scale: { start: 0.5, end: 0.1 },
