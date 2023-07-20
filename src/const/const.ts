@@ -5,6 +5,7 @@ export const CONST = {
     gridHeight: 8,
     tileWidth: 64,
     tileHeight: 72,
+    milestone: 2000,
     candyTypes: [
         'cookie1',
         'cookie2',
@@ -21,4 +22,19 @@ export const CONST = {
     ],
     shape: ['triangle', 'rectangle', 'circle'],
     matchScore: ['0', '0', '0', '100', '200', '300', '400', '500'],
+    triangle: [
+        510 / 2,
+        575 / 2 - 200,
+        510 / 2 - 200 * Math.cos(Math.PI / 6),
+        575 / 2 + 200 * Math.sin(Math.PI / 6),
+        510 / 2 + 200 * Math.cos(Math.PI / 6),
+        575 / 2 + 200 * Math.sin(Math.PI / 6),
+    ],
+    circle: [300, 400, 200],
+    rectangle: [
+        510 / 2 - 200 * Math.cos(Math.PI / 4),
+        575 / 2 - 200 * Math.sin(Math.PI / 4),
+        400 * Math.cos(Math.PI / 4),
+        400 * Math.cos(Math.PI / 4),
+    ],
 }

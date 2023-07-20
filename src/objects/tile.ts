@@ -3,12 +3,11 @@ import { IImageConstructor } from '../interfaces/image.interface'
 export class Tile extends Phaser.GameObjects.Sprite {
     private isGlow4: boolean
     private isGlow5: boolean
-    private matchGlow4FX: Phaser.FX.Glow
-    private matchGlow5FX: Phaser.FX.Glow
-    private matchWipe5FX: Phaser.FX.Wipe
-    private selectedShader: Phaser.GameObjects.Shader
-    private tileGraphics: Phaser.GameObjects.Graphics
+    private matchExplode3: Phaser.GameObjects.Particles.ParticleEmitter
+    private matchGlow4: Phaser.GameObjects.Particles.ParticleEmitter
+    private matchGlow5: Phaser.GameObjects.Particles.ParticleEmitter
 
+    private selectedTween: Phaser.Tweens.Tween | undefined
     private suggestedTween: Phaser.Tweens.Tween | undefined
     private match4Tween: Phaser.Tweens.Tween | undefined
 
@@ -19,6 +18,7 @@ export class Tile extends Phaser.GameObjects.Sprite {
         this.setOrigin(0.5, 0.5)
         this.setScale(0.8)
         this.setInteractive()
+        //this.setPipeline('Custom')
 
         // Tile Spawned
         if (aParams.delay) {
@@ -34,32 +34,6 @@ export class Tile extends Phaser.GameObjects.Sprite {
             })
         }
         this.scene.add.existing(this)
-
-        // Tile Selected
-        const basesShader2 = new Phaser.Display.BaseShader('BufferShader2', fragmentShader3)
-        this.selectedShader = this.scene.add
-            .shader(basesShader2, this.x - 5, this.y, this.width * 1.2, this.height * 1.2)
-            .setDepth(-1)
-            .setVisible(false)
-
-        // Tile Border
-        this.tileGraphics = this.scene.add.graphics().setDepth(-1).setVisible(true)
-        const borderWidth = 2
-        this.tileGraphics.lineStyle(borderWidth, 0xffffff, 1)
-        this.tileGraphics.strokeRoundedRect(
-            this.x - this.width / 2 - borderWidth / 2 + 4,
-            this.y - this.height / 2 - borderWidth / 2 + 4,
-            this.width + borderWidth - 8,
-            this.height + borderWidth - 8,
-            12
-        )
-
-        // Tile Glowed
-        this.preFX?.setPadding(32)
-        this.matchGlow4FX = this.preFX?.addGlow() as Phaser.FX.Glow
-        this.matchGlow4FX.setActive(false)
-        this.matchGlow5FX = this.preFX?.addGlow(0xffff00, 4, 0, false, 0.1, 32) as Phaser.FX.Glow
-        this.matchGlow5FX.setActive(false)
     }
 
     public revealImageWithDelay(x: number, y: number, delay: number): void {
@@ -70,68 +44,123 @@ export class Tile extends Phaser.GameObjects.Sprite {
             alpha: 1,
             ease: 'Power3',
             autoDestroy: true,
-            duration: 800,
+            duration: 400,
             delay: delay,
         })
     }
 
     public getSelected(): void {
-        this.selectedShader.setX(this.x - 5)
-        this.selectedShader.setY(this.y)
-        this.selectedShader.setVisible(true)
-        this.tileGraphics.setVisible(true)
+        // Tile Selected
+        if (!this.selectedTween)
+            this.selectedTween = this.scene.add.tween({
+                targets: this,
+                angle: 180,
+                yoyo: true,
+                loop: -1,
+            })
+        else this.selectedTween.resume()
     }
 
     public getDeselected(): void {
-        this.selectedShader.setVisible(false)
+        if (this.selectedTween) this.selectedTween.pause()
+        this.angle = 0
     }
 
-    public getAttracted(): void {
+    public getAttracted(direction: string): void {
+        let data
+        if (direction == 'LEFT') data = { x: this.x - 10 }
+        else if (direction == 'RIGHT') data = { x: this.x + 10 }
+        else if (direction == 'UP') data = { y: this.y - 10 }
+        else if (direction == 'DOWN') data = { y: this.y + 10 }
         if (!this.suggestedTween) {
             this.suggestedTween = this.scene.tweens.add({
                 targets: this,
-                scale: 0.9,
                 yoyo: true,
-                ease: 'sine.inout',
+                ease: 'sine.in',
                 autoDestroy: true,
-                repeat: 1,
-                duration: 250,
+                repeat: 0,
+                duration: 500,
+                onStart: () => {
+                    this.setPipeline('Custom')
+                },
                 onComplete: () => {
                     this.suggestedTween?.stop()
                     this.suggestedTween = undefined
                     this.setAlpha(1)
+                    this.resetPipeline()
                 },
+                scale: 0.9,
             })
         }
     }
 
+    public enableExplode3(): void {
+        if (!this.matchExplode3)
+            this.matchExplode3 = this.scene.add
+                .particles(this.x, this.y, 'flare', {
+                    speed: 50,
+                    advance: 20,
+                    duration: 100,
+                    lifespan: 250,
+                    scale: 0.5,
+                    emitting: false,
+                    maxAliveParticles: 5,
+                    delay: 20,
+                })
+                .setActive(false)
+                .startFollow(this, -this.x, -this.y)
+        this.matchExplode3.setActive(true)
+        this.matchExplode3.start()
+    }
+
     public enableGlow4(): void {
+        if (!this.matchGlow4)
+            this.matchGlow4 = this.scene.add
+                .particles(this.x, this.y, 'flares', {
+                    frame: 'white',
+                    color: [0xfacc22, 0xf89800, 0xf83600, 0x9f0404],
+                    colorEase: 'quad.out',
+                    lifespan: 500,
+                    angle: { min: -0, max: -360 },
+                    scale: { start: 0.5, end: 0, ease: 'sine.out' },
+                    speed: 100,
+                    blendMode: 'NORMAL',
+                    emitting: false,
+                })
+                .setActive(false)
+                .setDepth(-1)
+                .startFollow(this, -this.x, -this.y)
         this.isGlow4 = true
-        this.matchGlow4FX.setActive(true)
-        this.match4Tween = this.scene?.tweens.add({
-            targets: this.matchGlow4FX,
-            outerStrength: 15,
-            yoyo: true,
-            loop: -1,
-            ease: 'sine.inout',
-        })
+        this.matchGlow4.setActive(true)
+        this.scene.time.delayedCall(300, () => this.matchGlow4.start())
     }
 
     public enableGlow5(): void {
+        if (!this.matchGlow5)
+            this.matchGlow5 = this.scene.add
+                .particles(this.x, this.y, 'flares', {
+                    frame: 'white',
+                    color: [0x96e0da, 0x937ef3],
+                    colorEase: 'quart.out',
+                    lifespan: 500,
+                    angle: [0, 90, 180, 270],
+                    scale: { start: 0.5, end: 0, ease: 'sine.in' },
+                    speed: 100,
+                    blendMode: 'NORMAL',
+                    emitting: false,
+                })
+                .setActive(false)
+                .setDepth(-1)
+                .startFollow(this, -this.x, -this.y)
         this.isGlow5 = true
-        this.matchGlow5FX.setActive(true)
-        this.match4Tween = this.scene?.tweens.add({
-            targets: this.matchGlow5FX,
-            outerStrength: 25,
-            yoyo: true,
-            loop: -1,
-            ease: 'sine.inout',
-        })
+        this.matchGlow5.setActive(true)
+        this.scene.time.delayedCall(300, () => this.matchGlow5.start())
     }
 
     public disableGlow(): void {
-        this.matchGlow4FX.setActive(false)
-        this.matchGlow5FX.setActive(false)
+        if (this.matchExplode3) this.matchExplode3.stop()
+        if (this.matchGlow4) this.matchGlow4.stop()
+        if (this.matchGlow5) this.matchGlow5.stop()
         this.match4Tween?.destroy()
         this.match4Tween = undefined
         this.isGlow4 = false
@@ -160,50 +189,61 @@ export class Tile extends Phaser.GameObjects.Sprite {
     }
 
     public wipe(direction: string, delay: number): void {
-        if (direction == 'UP') {
-            this.matchWipe5FX = this.preFX?.addWipe(0.3, 1, 0) as Phaser.FX.Wipe
-        } else if (direction == 'DOWN') {
-            this.matchWipe5FX = this.preFX?.addWipe(0.3, 0, 0) as Phaser.FX.Wipe
-        } else if (direction == 'LEFT') {
-            this.matchWipe5FX = this.preFX?.addWipe(0.3, 1, 1) as Phaser.FX.Wipe
-        } else if (direction == 'RIGHT') {
-            this.matchWipe5FX = this.preFX?.addWipe(0.3, 0, 1) as Phaser.FX.Wipe
-        }
-        this.scene.tweens.add({
-            targets: this.matchWipe5FX,
-            progress: 1,
-            duration: 300,
-            easing: 'cubic.in',
-            delay: delay,
-            onComplete: () => {
-                this.setActive(false)
-                this.setAlpha(0)
-            },
-        })
+        if (direction == 'LEFT')
+            this.scene.tweens.add({
+                targets: this,
+                progress: 1,
+                x: this.x - 15,
+                alpha: 0,
+                duration: 100,
+                easing: 'quint.out',
+                delay: delay,
+                onComplete: () => {
+                    this.setActive(false)
+                    this.setAlpha(0)
+                },
+            })
+        else if (direction == 'RIGHT')
+            this.scene.tweens.add({
+                targets: this,
+                progress: 1,
+                x: this.x + 15,
+                alpha: 0,
+                duration: 100,
+                easing: 'quint.out',
+                delay: delay,
+                onComplete: () => {
+                    this.setActive(false)
+                    this.setAlpha(0)
+                },
+            })
+        else if (direction == 'UP')
+            this.scene.tweens.add({
+                targets: this,
+                progress: 1,
+                y: this.y - 15,
+                alpha: 0,
+                duration: 100,
+                easing: 'quint.out',
+                delay: delay,
+                onComplete: () => {
+                    this.setActive(false)
+                    this.setAlpha(0)
+                },
+            })
+        else if (direction == 'DOWN')
+            this.scene.tweens.add({
+                targets: this,
+                progress: 1,
+                y: this.y + 15,
+                alpha: 0,
+                duration: 100,
+                easing: 'quint.out',
+                delay: delay,
+                onComplete: () => {
+                    this.setActive(false)
+                    this.setAlpha(0)
+                },
+            })
     }
 }
-
-const fragmentShader3 = `
-precision mediump float;
-
-uniform float time;
-uniform vec2 resolution;
-uniform vec2 mouse;
-
-varying vec2 fragCoord;
-
-void main (void)
-{
-    float intensity = 0.;
-
-    for (float i = 0.; i < 54.; i++)
-    {
-        float angle = i/27. * 3.14159;
-        vec2 xy = vec2(0.27 * cos(angle), 0.27 * sin(angle));
-        xy += fragCoord.xy/resolution.y-0.5;
-        intensity += pow(1000000., (0.77 - length(xy) * 1.9) * (1. + 0.275 * fract(-i / 27. - time))) / 80000.;
-    }
-
-    gl_FragColor = vec4(clamp(intensity * vec3(0.0927, 0.396, 0.17), vec3(0.), vec3(0.5)), 0.);
-}
-`
