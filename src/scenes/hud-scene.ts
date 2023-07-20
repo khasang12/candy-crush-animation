@@ -18,19 +18,19 @@ export class HUDScene extends Phaser.Scene {
         this.target = CONST.milestone
         this.createLoadingbar()
         this.progressParticle = this.add
-            .particles(522, 157.5, 'flares', {
+            .particles(523, 157.5, 'flares', {
                 y: { min: -5, max: +5 },
                 frame: 'white',
                 color: [0x69a6d1, 0x94dfff, 0xc9ebef],
                 lifespan: 800,
                 angle: { min: -90 + 180, max: 90 + 180 },
-                scale: { start: 0.05, end: 0, ease: 'sine.in' },
+                scale: { start: 0.07, end: 0, ease: 'sine.in' },
                 speed: { min: 20, max: 30 },
                 blendMode: 'NORMAL',
                 quantity: 3,
             })
             .setAlpha(0)
-            .setDepth(1)
+            .setDepth(2)
 
         this.textElements = new Map([
             [
@@ -65,7 +65,6 @@ export class HUDScene extends Phaser.Scene {
     }
 
     private updateScore() {
-        console.log(this.registry.get('score'))
         this.textElements.get('SCORE')?.setText(`Score: ${this.registry.get('score')}`)
         this.updateProgress()
         if (
@@ -98,7 +97,7 @@ export class HUDScene extends Phaser.Scene {
     private createLoadingbar(): void {
         this.loadingBar = this.add.nineslice(520, 160, 'ui', 'ButtonOrange')
         this.progressBar = this.add.nineslice(528, 158, 'ui', 'ButtonOrangeFill1', 0, 16, 6, 6)
-        this.loadingBar.setOrigin(0, 0.5).setScale(0.75, 0.6)
-        this.progressBar.setOrigin(0, 0.5).setScale(0.75, 0.6)
+        this.loadingBar.setOrigin(0, 0.5).setScale(0.75, 0.6).setDepth(1)
+        this.progressBar.setOrigin(0, 0.5).setScale(0.75, 0.6).setDepth(3)
     }
 }

@@ -11,7 +11,6 @@ export class GameScene extends Phaser.Scene {
     private particleManager: ParticleManager
 
     // Variables
-    private inactivityTimer: NodeJS.Timeout
     private canMove: boolean
     private isSuggested: boolean
     private isRedisting: boolean
@@ -19,6 +18,10 @@ export class GameScene extends Phaser.Scene {
 
     // Texts
     private scoreText: Phaser.GameObjects.Text
+
+    // Timer
+    private suggestionEvent: Phaser.Time.TimerEvent
+    private idleEvent: Phaser.Time.TimerEvent
 
     // Grid with tiles
     private tileGrid: Array<Array<Tile | undefined>>
@@ -45,8 +48,7 @@ export class GameScene extends Phaser.Scene {
     init(): void {
         RenderUtils.addStats(this)
         RenderUtils.countDrawCalls(this)
-        //console.log(this.children)
-        //this.enablePipeline()
+        this.enablePipeline()
 
         // Variables
         this.tileManager = new TileManager(this)
@@ -69,30 +71,48 @@ export class GameScene extends Phaser.Scene {
             })
             .setDepth(2)
 
-        // Init grid with tiles
+        // Tiles
         this.tileGrid = this.tileManager.tileGrid
         this.tileManager.revealTiles()
         this.time.delayedCall(2000, () => {
             this.checkMatches()
         })
 
-        // Input
+        // Events
         this.input.on('gameobjectdown', this.tileDown, this)
+        this.createTimerEvent()
+    }
 
-        this.input.on('pointermove', () => {
-            clearTimeout(this.inactivityTimer)
-            if (this.idleTweens) this.idleTweens.stop()
+    private createTimerEvent() {
+        this.suggestionEvent = new Phaser.Time.TimerEvent({ delay: 1500 })
+        this.idleEvent = new Phaser.Time.TimerEvent({ delay: 5000 })
 
-            this.inactivityTimer = setTimeout(() => this.getNextMove(() => this.shuffle()), 1000)
-            this.inactivityTimer = setTimeout(() => this.idle(), 5000)
-        })
+        this.time.addEvent(this.suggestionEvent)
+        this.time.addEvent(this.idleEvent)
 
-        this.input.on('pointerdown', () => {
-            if (this.particleManager.matchParticle) {
-                this.particleManager.matchParticle.stop()
-                this.isSuggested = false
-            }
-        })
+        this.input.on(
+            'pointerdown',
+            () => {
+                this.time.addEvent(this.suggestionEvent)
+                this.time.addEvent(this.idleEvent)
+                if (this.particleManager.matchParticle) {
+                    this.particleManager.matchParticle.stop()
+                    this.isSuggested = false
+                }
+            },
+            this
+        )
+    }
+
+    public update(): void {
+        if (this.suggestionEvent.getProgress() == 1) {
+            this.getNextMove(() => this.shuffle())
+            this.time.addEvent(this.suggestionEvent)
+        }
+        if (this.idleEvent.getProgress() == 1) {
+            this.idle()
+            this.time.addEvent(this.idleEvent)
+        }
     }
 
     private tileDown(_pointer: Phaser.Input.Pointer, gameobject: Tile, _event: any): void {
@@ -336,15 +356,15 @@ export class GameScene extends Phaser.Scene {
     public idle() {
         let time = 0
         for (let j = 0; j < this.tileGrid.length; j++) {
-            for (let i = 0; i < this.tileGrid.length; i++) {
-                if (this.tileGrid[i][j] == undefined) continue
+            for (const element of this.tileGrid) {
+                if (element[j] == undefined) continue
                 this.idleTweens = this.add.tween({
-                    targets: this.tileGrid[i][j],
+                    targets: element[j],
                     scale: 0.5,
                     ease: 'sine.inout',
                     duration: 300,
                     autoDestroy: true,
-                    delay: i * 50,
+                    delay: time * 50,
                     repeat: 2,
                     yoyo: true,
                 })
@@ -514,7 +534,8 @@ export class GameScene extends Phaser.Scene {
 
     private onCompleteShuffle() {
         this.isRedisting = false
-        clearTimeout(this.inactivityTimer)
+        this.time.addEvent(this.idleEvent)
+        this.time.addEvent(this.suggestionEvent)
         let i = 200
         for (let y = 0; y < CONST.gridHeight; y++) {
             for (let x = 0; x < CONST.gridWidth; x++) {

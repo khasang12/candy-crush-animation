@@ -6,11 +6,10 @@ export class Tile extends Phaser.GameObjects.Sprite {
     private matchExplode3: Phaser.GameObjects.Particles.ParticleEmitter
     private matchGlow4: Phaser.GameObjects.Particles.ParticleEmitter
     private matchGlow5: Phaser.GameObjects.Particles.ParticleEmitter
-    private selectedShader: Phaser.GameObjects.Shader
 
+    private selectedTween: Phaser.Tweens.Tween | undefined
     private suggestedTween: Phaser.Tweens.Tween | undefined
     private match4Tween: Phaser.Tweens.Tween | undefined
-    private match5Tween: Phaser.Tweens.Tween | undefined
 
     constructor(aParams: IImageConstructor) {
         super(aParams.scene, aParams.x, aParams.y, aParams.texture, aParams.frame)
@@ -52,22 +51,19 @@ export class Tile extends Phaser.GameObjects.Sprite {
 
     public getSelected(): void {
         // Tile Selected
-        if (!this.selectedShader) {
-            const basesShader2 = new Phaser.Display.BaseShader('BufferShader2', fragmentShader3)
-            this.selectedShader = this.scene.add
-                .shader(basesShader2, this.x - 5, this.y, this.width * 1.2, this.height * 1.2)
-                .setDepth(-1)
-                .setActive(false)
-                .setVisible(false)
-        }
-
-        this.selectedShader.setX(this.x - 5)
-        this.selectedShader.setY(this.y)
-        this.selectedShader.setActive(true).setVisible(true)
+        if (!this.selectedTween)
+            this.selectedTween = this.scene.add.tween({
+                targets: this,
+                angle: 180,
+                yoyo: true,
+                loop: -1,
+            })
+        else this.selectedTween.resume()
     }
 
     public getDeselected(): void {
-        this.selectedShader.setActive(false).setVisible(false)
+        if (this.selectedTween) this.selectedTween.pause()
+        this.angle = 0
     }
 
     public getAttracted(direction: string): void {
@@ -76,7 +72,6 @@ export class Tile extends Phaser.GameObjects.Sprite {
         else if (direction == 'RIGHT') data = { x: this.x + 10 }
         else if (direction == 'UP') data = { y: this.y - 10 }
         else if (direction == 'DOWN') data = { y: this.y + 10 }
-
         if (!this.suggestedTween) {
             this.suggestedTween = this.scene.tweens.add({
                 targets: this,
@@ -85,10 +80,14 @@ export class Tile extends Phaser.GameObjects.Sprite {
                 autoDestroy: true,
                 repeat: 0,
                 duration: 500,
+                onStart: () => {
+                    this.setPipeline('Custom')
+                },
                 onComplete: () => {
                     this.suggestedTween?.stop()
                     this.suggestedTween = undefined
                     this.setAlpha(1)
+                    this.resetPipeline()
                 },
                 scale: 0.9,
             })
@@ -139,12 +138,12 @@ export class Tile extends Phaser.GameObjects.Sprite {
     public enableGlow5(): void {
         if (!this.matchGlow5)
             this.matchGlow5 = this.scene.add
-                .particles(this.x, this.y, 'flare', {
+                .particles(this.x, this.y, 'flares', {
                     frame: 'white',
                     color: [0x96e0da, 0x937ef3],
                     colorEase: 'quart.out',
                     lifespan: 500,
-                    angle: [0 + 45, 90 + 45, 180 + 45, 270 + 45],
+                    angle: [0, 90, 180, 270],
                     scale: { start: 0.5, end: 0, ease: 'sine.in' },
                     speed: 100,
                     blendMode: 'NORMAL',
@@ -248,28 +247,3 @@ export class Tile extends Phaser.GameObjects.Sprite {
             })
     }
 }
-
-const fragmentShader3 = `
-precision mediump float;
-
-uniform float time;
-uniform vec2 resolution;
-uniform vec2 mouse;
-
-varying vec2 fragCoord;
-
-void main (void)
-{
-    float intensity = 0.;
-
-    for (float i = 0.; i < 54.; i++)
-    {
-        float angle = i/27. * 3.14159;
-        vec2 xy = vec2(0.27 * cos(angle), 0.27 * sin(angle));
-        xy += fragCoord.xy/resolution.y-0.5;
-        intensity += pow(1000000., (0.77 - length(xy) * 1.9) * (1. + 0.275 * fract(-i / 27. - time))) / 80000.;
-    }
-
-    gl_FragColor = vec4(clamp(intensity * vec3(0.0927, 0.396, 0.17), vec3(0.), vec3(0.5)), 0.);
-}
-`
