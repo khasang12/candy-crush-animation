@@ -3,6 +3,7 @@ import { Tile } from '../objects/Tile'
 import TileManager from '../objects/TileManager'
 import ConfettiParticle from '../objects/particles/ConfettiParticle'
 import ShinePipeline from '../pipeline/ShinePipeline'
+import RenderUtils from '../utils/render'
 
 export class GameScene extends Phaser.Scene {
     // Global Animation
@@ -36,51 +37,7 @@ export class GameScene extends Phaser.Scene {
         })
     }
 
-    addStats() {
-        this.stats = document.createElement('span')
-        this.stats.style.position = 'fixed'
-        this.stats.style.left = '0'
-        this.stats.style.bottom = '0'
-        this.stats.style.backgroundColor = 'black'
-        this.stats.style.minWidth = '200px'
-        this.stats.style.padding = '15px'
-
-        this.stats.style.color = 'white'
-        this.stats.style.fontFamily = 'Courier New'
-        this.stats.style.textAlign = 'center'
-        this.stats.innerText = 'Draw calls: ?'
-
-        document.body.append(this.stats)
-    }
-
-    countDrawCalls() {
-        const renderer = this.game.renderer
-        if (renderer instanceof Phaser.Renderer.WebGL.WebGLRenderer) {
-            let drawCalls = 0
-
-            const pipelines = renderer.pipelines.pipelines.values()
-
-            renderer.on(Phaser.Renderer.Events.PRE_RENDER, () => (drawCalls = 0))
-            pipelines.forEach((p) =>
-                p.on(Phaser.Renderer.WebGL.Pipelines.Events.AFTER_FLUSH, () => drawCalls++)
-            )
-            renderer.on(Phaser.Renderer.Events.POST_RENDER, () => this.redrawStats(drawCalls))
-        } else {
-            renderer.on(Phaser.Renderer.Events.POST_RENDER, () =>
-                this.redrawStats(renderer.drawCount)
-            )
-        }
-    }
-
-    redrawStats(drawCalls = 0) {
-        this.stats.innerText = `Draw calls: ${drawCalls}`
-    }
-
-    init(): void {
-        /* this.addStats()
-        this.countDrawCalls() */
-        console.log(this.children)
-
+    public enablePipeline(){
         const renderer = this.game.renderer as Phaser.Renderer.WebGL.WebGLRenderer
         const customPipeline = renderer.pipelines.add('Custom', new ShinePipeline(this.game))
         customPipeline.set2f(
@@ -88,6 +45,13 @@ export class GameScene extends Phaser.Scene {
             this.game.config.width as number,
             this.game.config.height as number
         )
+    }
+
+    init(): void {
+        RenderUtils.addStats(this)
+        RenderUtils.countDrawCalls(this)
+        console.log(this.children)
+        //this.enablePipeline()
 
         // Variables
         this.tileManager = new TileManager(this)
@@ -203,14 +167,15 @@ export class GameScene extends Phaser.Scene {
                         CONST.tileHeight
 
                     // Check if the selected tiles are both in range to make a move
-                    /* if ((dx === 1 && dy === 0) || (dx === 0 && dy === 1)) {
+                    if ((dx === 1 && dy === 0) || (dx === 0 && dy === 1)) {
                         this.canMove = false
                         this.swapTiles()
                     } else {
                         this.firstSelectedTile = undefined
-                    } */
-                    this.canMove = false
-                    this.swapTiles()
+                    }
+                    // TESTING PURPOSE
+                    /* this.canMove = false
+                    this.swapTiles() */
                 }
             }
         }
@@ -297,7 +262,7 @@ export class GameScene extends Phaser.Scene {
             )
         } else {
             // No match so just swap the tiles back to their original position and reset
-            //this.swapTiles()
+            this.swapTiles()
             this.tileUp(() => {
                 this.canMove = true
             })

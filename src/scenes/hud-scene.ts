@@ -18,7 +18,7 @@ export class HUDScene extends Phaser.Scene {
         this.target = CONST.milestone
         this.createLoadingbar()
         this.progressParticle = this.add
-            .particles(525, 157.5, 'flares', {
+            .particles(522, 157.5, 'flares', {
                 y: { min: -5, max: +5 },
                 frame: 'white',
                 color: [0x69a6d1, 0x94dfff, 0xc9ebef],
