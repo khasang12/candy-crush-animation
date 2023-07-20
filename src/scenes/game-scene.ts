@@ -1,17 +1,14 @@
 import { CONST } from '../const/const'
 import { Tile } from '../objects/Tile'
 import TileManager from '../objects/TileManager'
-import ConfettiParticle from '../objects/particles/ConfettiParticle'
+import ParticleManager from '../objects/particles/ParticleManager'
 import ShinePipeline from '../pipeline/ShinePipeline'
 import RenderUtils from '../utils/render'
 
 export class GameScene extends Phaser.Scene {
-    // Global Animation
+    // Global Animation, Emitters
     private idleTweens: Phaser.Tweens.Tween
-    private matchParticle: Phaser.GameObjects.Particles.ParticleEmitter
-    private confettiParticle: Phaser.GameObjects.Particles.ParticleEmitter
-    private explodeParticle: Phaser.GameObjects.Particles.ParticleEmitter
-    private match3x3Particle: Phaser.GameObjects.Particles.ParticleEmitter
+    private particleManager: ParticleManager
 
     // Variables
     private inactivityTimer: NodeJS.Timeout
@@ -29,15 +26,13 @@ export class GameScene extends Phaser.Scene {
     private firstSelectedTile: Tile | undefined
     private secondSelectedTile: Tile | undefined
 
-    private stats: HTMLSpanElement
-
     constructor() {
         super({
             key: 'GameScene',
         })
     }
 
-    public enablePipeline(){
+    public enablePipeline() {
         const renderer = this.game.renderer as Phaser.Renderer.WebGL.WebGLRenderer
         const customPipeline = renderer.pipelines.add('Custom', new ShinePipeline(this.game))
         customPipeline.set2f(
@@ -50,11 +45,12 @@ export class GameScene extends Phaser.Scene {
     init(): void {
         RenderUtils.addStats(this)
         RenderUtils.countDrawCalls(this)
-        console.log(this.children)
+        //console.log(this.children)
         //this.enablePipeline()
 
         // Variables
         this.tileManager = new TileManager(this)
+        this.particleManager = new ParticleManager(this)
 
         this.canMove = true
         this.isSuggested = false
@@ -92,53 +88,10 @@ export class GameScene extends Phaser.Scene {
         })
 
         this.input.on('pointerdown', () => {
-            if (this.matchParticle) {
-                this.matchParticle.stop()
+            if (this.particleManager.matchParticle) {
+                this.particleManager.matchParticle.stop()
                 this.isSuggested = false
             }
-        })
-
-        // emitters
-        this.confettiParticle = this.add.particles(0, 585, 'confetti', {
-            frame: {
-                frames: ['blue.png', 'green.png', 'red.png'],
-                cycle: true,
-            },
-            lifespan: 5000,
-            speed: { min: 650, max: 1200 },
-            angle: { min: -60, max: -50 },
-            scale: { start: 0.3, end: 0 },
-            gravityY: 300,
-            emitting: false,
-            frequency: 60,
-            quantity: 5,
-            particleClass: ConfettiParticle,
-            collideBottom: true
-        })
-
-        this.matchParticle = this.add.particles(0, 0, 'flares', {
-            frame: { frames: ['red', 'green', 'blue'], cycle: true },
-            lifespan: 500,
-            emitting: false,
-            scale: { start: 0.5, end: 0.1 },
-            duration: 500,
-        })
-
-        this.explodeParticle = this.add.particles(0, 0, 'flare', {
-            speed: 24,
-            lifespan: 1500,
-            quantity: 10,
-            scale: { start: 0.3, end: 0 },
-            emitting: false,
-            duration: 300,
-        })
-
-        this.match3x3Particle = this.add.particles(0, 0, 'flares', {
-            frame: { frames: ['red', 'green', 'blue'], cycle: true },
-            lifespan: 250,
-            emitting: false,
-            scale: { start: 0.5, end: 0.1 },
-            duration: 300,
         })
     }
 
@@ -186,13 +139,13 @@ export class GameScene extends Phaser.Scene {
             this.canMove = false
             // Get the position of the two tiles
             const firstTilePosition = {
-                x: this.firstSelectedTile.x - this.firstSelectedTile.width / 2,
-                y: this.firstSelectedTile.y - this.firstSelectedTile.height / 2,
+                x: this.firstSelectedTile.x - CONST.tileWidth / 2,
+                y: this.firstSelectedTile.y - CONST.tileHeight / 2,
             }
 
             const secondTilePosition = {
-                x: this.secondSelectedTile.x - this.firstSelectedTile.width / 2,
-                y: this.secondSelectedTile.y - this.firstSelectedTile.height / 2,
+                x: this.secondSelectedTile.x - CONST.tileWidth / 2,
+                y: this.secondSelectedTile.y - CONST.tileHeight / 2,
             }
 
             // Swap them in our grid with the tiles
@@ -318,8 +271,8 @@ export class GameScene extends Phaser.Scene {
         }
         this.canMove = true
         this.time.delayedCall(1000, () => {
-            if (this.matchParticle && isFill) {
-                this.matchParticle.stop()
+            if (isFill) {
+                this.particleManager.stopMatchParticle(true)
                 this.isSuggested = false
             }
             this.canMove = true
@@ -349,11 +302,12 @@ export class GameScene extends Phaser.Scene {
             if (!glow5) for (const ele of tempArr) if (ele.isGlowed4()) glow4 = ele
 
             if (glow4) {
-                this.emitGlow4(tempArr)
+                this.particleManager.emitGlow4(tempArr)
+                this.tileManager.emitGlow4(tempArr)
             } else if (glow5) {
-                this.emitGlow5(glow5, tempArr)
+                this.tileManager.emitGlow5(glow5, tempArr)
             }
-            this.emitLineToScoreboard(tempArr)
+            this.particleManager.emitLineToScoreboard(tempArr)
 
             // Removal
             switch (tempArr.length) {
@@ -514,7 +468,6 @@ export class GameScene extends Phaser.Scene {
                                         ]
                                         if (!this.isSuggested && this.canMove) {
                                             this.emitSuggestion(
-                                                matches[0],
                                                 this.tileGrid[i][j] as Tile,
                                                 this.tileGrid[x2][y2] as Tile,
                                                 () => (this.canMove = true)
@@ -552,7 +505,7 @@ export class GameScene extends Phaser.Scene {
         }
     }
 
-    public emitSuggestion(tileGroup: Tile[], tile1: Tile, tile2: Tile, callback: () => void) {
+    public emitSuggestion(tile1: Tile, tile2: Tile, callback: () => void) {
         this.canMove = false
         if (tile1.y == tile2.y) {
             tile1.getAttracted('RIGHT')
@@ -588,9 +541,9 @@ export class GameScene extends Phaser.Scene {
                         this.registry.values.score > 0) ||
                     this.registry.get('score') > this.registry.get('level') * CONST.milestone
                 ) {
-                    if (this.matchParticle) this.matchParticle.stop(true)
+                    this.particleManager.stopMatchParticle(true)
                     this.isSuggested = true
-                    this.confettiParticle.explode(128)
+                    this.particleManager.emitConfetti(128)
                     this.tileUp(() => {
                         this.time.delayedCall(1200, () => {
                             if (this.canMove && !this.isRedisting) this.shuffle()
@@ -602,50 +555,9 @@ export class GameScene extends Phaser.Scene {
         })
     }
 
-    private emitGlow4(tempArr: Tile[]) {
-        // Explode
-        const peri = new Phaser.Geom.Rectangle(
-            tempArr[1].x - (3 * tempArr[0].width) / 2,
-            tempArr[1].y - (3 * tempArr[0].height) / 2,
-            3 * tempArr[0].width,
-            3 * tempArr[0].height
-        )
-
-        const zone = this.explodeParticle.addEmitZone({
-            type: 'edge',
-            source: peri,
-            quantity: 22,
-        })
-        this.explodeParticle.start(0, 300)
-        this.time.delayedCall(300, () => {
-            this.explodeParticle.removeEmitZone(zone[0])
-        })
-
-        this.tileManager.emitGlow4(tempArr)
-    }
-
-    private emitGlow5(glow5: Tile, tempArr: Tile[]) {
-        this.tileManager.emitGlow5(glow5, tempArr)
-    }
-
-    private emitLineToScoreboard(tempArr: Tile[]) {
-        const line = new Phaser.Geom.Line(0, 0, -tempArr[0].x + 520, -tempArr[0].y + 100)
-        this.match3x3Particle.setPosition(tempArr[0].x, tempArr[0].y)
-        const zone = this.match3x3Particle.addEmitZone({
-            type: 'edge',
-            source: line,
-            quantity: 32,
-            total: 1,
-        })
-        this.match3x3Particle.start(300)
-        this.time.delayedCall(500, () => {
-            this.match3x3Particle.removeEmitZone(zone[0])
-        })
-    }
-
     public shuffle() {
         if (!this.isRedisting) {
-            if (this.matchParticle) this.matchParticle.stop()
+            this.particleManager.stopMatchParticle(true)
             this.isRedisting = true
             this.canMove = false
 
@@ -678,10 +590,7 @@ export class GameScene extends Phaser.Scene {
                 duration: 1000,
                 autoDestroy: true,
                 onStart: () => {
-                    if (this.matchParticle) {
-                        this.matchParticle.stop(true)
-                        this.matchParticle.setAlpha(0)
-                    }
+                    this.particleManager.stopMatchParticle(true)
                 },
                 onUpdate: function () {
                     if (RANDOM_SHAPE === 'circle')
@@ -716,11 +625,8 @@ export class GameScene extends Phaser.Scene {
                     this.canMove = true
                     this.time.delayedCall(2000, () => {
                         this.checkMatches()
-                        if (this.matchParticle) {
-                            this.matchParticle.stop()
-                            this.matchParticle.setAlpha(1)
-                            this.isSuggested = false
-                        }
+                        this.particleManager.stopMatchParticle(false)
+                        this.isSuggested = false
                     })
                 },
             })
